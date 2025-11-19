@@ -4,14 +4,14 @@ namespace App\Http\Controllers\Master;
 
 use App\Helpers\AuthHelper;
 use App\Http\Controllers\Controller;
-use App\Models\Poliklinik;
+use App\Models\Dokter;
 use Illuminate\Http\Request;
 
-class PoliklinikController extends Controller
+class DokterController extends Controller
 {
     public function index()
     {
-        $data = Poliklinik::all();
+        $data = Dokter::where('status','=','1')->get();
         return response()->json([
             'code' => 200, 
             'data' => $data,
@@ -21,12 +21,9 @@ class PoliklinikController extends Controller
     }
     public function store(Request $request)
     {
-        $model = new Poliklinik();
-        $model->kd_poli = $request->input('kd_poli');
-        $model->nm_poli = $request->input('nm_poli');
-        $model->registrasi = $request->input('registrasi');
-        $model->registrasilama = $request->input('registrasilama');
-        $model->status = $request->input('status');
+        $model = new Dokter();
+        $model->kd_dokter = $request->input('kd_poli');
+        $model->nm_dokter = $request->input('nm_poli');
         $model->save();
         return response()->json([
             'code' => 200, 

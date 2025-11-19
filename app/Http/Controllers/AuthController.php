@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\IoUser;
 use Carbon\Carbon;
+use DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Str;
@@ -68,6 +69,44 @@ class AuthController extends Controller
         return response()->json([
             'code' => 200,
             'message' => 'Ok',
+        ]);
+    }
+    public function loginData()
+    {
+        $data = Crypt::decrypt(request()->header('Authorization'));
+
+        $username = $data['username'];
+        $expired = $data['expired'];
+
+        if (!isset($username)) {
+            return response()->json(['code' => 401, 'message' => 'Unauthorized'], 401);
+        }
+
+        if (!isset($expired)) {
+            return response()->json(['code' => 401, 'message' => 'Unauthorized'], 401);
+        }
+
+        if (Carbon::now()->greaterThan($expired)) {
+            return response()->json(['code' => 401, 'message' => 'Token expired'], 401);
+        }
+        $expiredtoken = (int)config('confsistem.expired_time');
+        $info = [
+            'username' => $username,
+            'expired' => Carbon::now()->addMinutes($expiredtoken)
+        ];
+        $data = DB::table('io_user')->where('id', $username)->first([
+            'id',
+            'user_access',
+            'group_access'
+        ]);
+        $data->expired = $expired;
+        $token = Crypt::encrypt($info);
+
+        return response()->json([
+            'code' => 200,
+            'message' => 'Ok',
+            'data' => $data,
+            'token' => $token,
         ]);
     }
     public function check(Request $request)

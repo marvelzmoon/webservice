@@ -11,30 +11,30 @@ class ReferensiMobilejknBpjs extends Model
     public $incrementing = false;
     protected $keyType = 'string';
     protected $primaryKey = ['nobooking'];
-
     protected $fillable = [
-        'nobooking',
-        'no_rawat',
-        'nomorkartu',
-        'nik',
-        'nohp',
-        'kodepoli',
-        'pasienbaru',
-        'norm',
-        'tanggalperiksa',
-        'kodedokter',
-        'jampraktek',
-        'jeniskunjungan',
-        'nomorreferensi',
-        'nomorantrean',
-        'angkaantrean',
-        'estimasidilayani',
-        'sisakuotajkn',
-        'kuotajkn',
-        'sisakuotanonjkn',
-        'kuotanonjkn',
-        'status',
-        'validasi',
+        'nobooking', 
+        'no_rawat', 
+        'nomorkartu', 
+        'nik', 
+        'nohp', 
+        'kodepoli', 
+        'pasienbaru', 
+        'norm', 
+        'tanggalperiksa', 
+        'kodedokter', 
+        'jampraktek', 
+        'jeniskunjungan', 
+        'nomorreferensi', 
+        'nomorantrean', 
+        'angkaantrean', 
+        'estimasidilayani', 
+        'sisakuotajkn', 
+        'kuotajkn', 
+        'sisakuotanonjkn', 
+        'kuotanonjkn', 
+        'status', 
+        'validasi', 
         'statuskirim'
     ];
+    
 }

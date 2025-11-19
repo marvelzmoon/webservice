@@ -41,6 +41,9 @@ class ApiTokenMiddleware
         // // simpan user ke request
         // $request->merge(['auth_user' => $user]);
 
+        if ($request->header('Authorization')==null) {
+            return response()->json(['code' => 401, 'message' => 'Unauthorized'], 401);
+        }
         $data = Crypt::decrypt($request->header('Authorization'));
 
         $username = $data['username'];

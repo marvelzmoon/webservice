@@ -11,7 +11,6 @@ class Dokter extends Model
     public $incrementing = false;
     protected $keyType = 'string';
     protected $primaryKey = ['kd_dokter'];
-
     protected $fillable = [
         'kd_dokter',
         'nm_dokter',
@@ -27,6 +26,6 @@ class Dokter extends Model
         'kd_sps',
         'alumni',
         'no_ijn_praktek',
-        'status'
+        'status',
     ];
 }
