@@ -36,20 +36,33 @@ Route::middleware(['api_token'])->group(function () {
     Route::prefix('registrasi')->group(function () {
         Route::controller(RegistrasiController::class)->group(function () {
             Route::post('/post', 'post');
+            Route::post('/add-antrol', 'addantrian');
+            Route::post('/batal-periksa', 'batalPeriksa');
         });
     });
 
-    Route::controller(ReferensiController::class)->group(function () {
-        Route::get('/ref/penjab', 'penjab');
-        Route::post('/ref/kelurahan', 'kelurahan');
-        Route::post('/ref/kecamatan', 'kecamatan');
-        Route::post('/ref/kabupaten', 'kabupaten');
-        Route::get('/ref/perusahaan-pasien', 'perusahaanpasien');
-        Route::get('/ref/suku-bangsa', 'sukubangsa');
-        Route::get('/ref/bahasa-pasien', 'bahasapasien');
-        Route::get('/ref/cacat-fisik', 'cacatfisik');
-        Route::get('/ref/propinsi', 'propinsi');
+    Route::prefix('ref')->group(function () {
+        Route::controller(ReferensiController::class)->group(function () {
+            Route::get('/penjab', 'penjab');
+            Route::post('/kelurahan', 'kelurahan');
+            Route::post('/kecamatan', 'kecamatan');
+            Route::post('/kabupaten', 'kabupaten');
+            Route::get('/perusahaan-pasien', 'perusahaanpasien');
+            Route::get('/suku-bangsa', 'sukubangsa');
+            Route::get('/bahasa-pasien', 'bahasapasien');
+            Route::get('/cacat-fisik', 'cacatfisik');
+            Route::get('/propinsi', 'propinsi');
+        });
     });
+
+    Route::prefix('pasien')->group(function () {
+        Route::controller(PasienController::class)->group(function () {
+            Route::post('/search', 'searchPasien');
+            Route::post('/create', 'createPasien');
+            Route::post('/destroy', 'destroy');
+        });
+    });
+
 
     Route::get('/master/poliklinik', action: [PoliklinikController::class, 'index']);
     Route::post('/master/poliklinik', action: [PoliklinikController::class, 'store']);

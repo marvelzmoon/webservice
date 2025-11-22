@@ -4,9 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\IoUser;
 use Carbon\Carbon;
-use DB;
+// use DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class AuthController extends Controller
@@ -52,7 +53,8 @@ class AuthController extends Controller
             'token' => $token,
         ]);
     }
-    public function checkUsername(Request $request) {
+    public function checkUsername(Request $request)
+    {
         $username = $request->username;
 
         if (!$username) {
@@ -130,7 +132,8 @@ class AuthController extends Controller
             return response()->json(['code' => 200, 'message' => 'Ok check', 'expired' => $expired->toDateTimeString()], 200);
         }
     }
-    public function test(){
+    public function test()
+    {
         return response()->json([
             'code' => 200,
             'message' => 'Ok',

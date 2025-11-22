@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Jkn;
 
+use App\Helpers\AuthHelper;
 use App\Helpers\BPer;
 use App\Http\Controllers\Controller;
 use App\Models\BridgingSuratKontrolBpjs;
@@ -14,13 +15,16 @@ class JknSuratkontrolController extends Controller
         $tanggal = $request->tanggal;
 
         if (!$tanggal || $tanggal == "") {
-            return response()->json(['code' => 204, 'message' => 'Tanggal rencana kontrol harus diisi!'], 200);
+            return response()->json([
+                'code' => 201,
+                'message' => 'Tanggal rencana kontrol harus diisi!',
+            ], 200);
         }
 
         if (!BPer::validTanggal($tanggal)) {
             return response()->json([
-                'status' => false,
-                'message' => 'Format tanggal harus Y-m-d'
+                'code' => 201,
+                'message' => 'Format tanggal harus Y-m-d',
             ], 400);
         }
 
@@ -40,7 +44,8 @@ class JknSuratkontrolController extends Controller
         return response()->json([
             'code' => ($carisurkon) ? 200 : 204,
             'message' => ($carisurkon) ? 'Ok' : 'Data tidak ditemukan!',
-            'data' => ($carisurkon) ? $carisurkon : null
+            'data' => ($carisurkon) ? $carisurkon : null,
+            'token' => AuthHelper::genToken(),
         ]);
     }
 }
