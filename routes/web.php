@@ -35,6 +35,7 @@ Route::middleware(['api_token'])->group(function () {
 
     Route::prefix('registrasi')->group(function () {
         Route::controller(RegistrasiController::class)->group(function () {
+            Route::post('/getdata', 'getdata');
             Route::post('/post', 'post');
             Route::post('/add-antrol', 'addantrian');
             Route::post('/batal-periksa', 'batalPeriksa');
@@ -57,6 +58,7 @@ Route::middleware(['api_token'])->group(function () {
 
     Route::prefix('pasien')->group(function () {
         Route::controller(PasienController::class)->group(function () {
+            Route::get('/getdata', 'getdata');
             Route::post('/search', 'searchPasien');
             Route::post('/create', 'createPasien');
             Route::post('/destroy', 'destroy');

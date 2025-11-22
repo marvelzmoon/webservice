@@ -6,19 +6,38 @@ use App\Helpers\AuthHelper;
 use App\Helpers\BPer;
 use App\Http\Controllers\Controller;
 use App\Models\IoUser;
-use App\Models\Kabupaten;
-use App\Models\Kecamatan;
-use App\Models\Kelurahan;
 use App\Models\Pasien;
-use App\Models\Penjab;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
-use PDO;
 
 class PasienController extends Controller
 {
+    public function getdata()
+    {
+        $query = Pasien::orderBy('no_rkm_medis', 'DESC')
+            ->limit(2000);
+
+        // Validasi query kosong
+        if (!$query->exists()) {
+            return response()->json([
+                'code'    => 204,
+                'message' => 'Data tidak ditemukan',
+                'data'    => [],
+            ]);
+        }
+
+        // Jika ada data → paginate
+        $data = $query->paginate(100);
+
+        return response()->json([
+            'code' => 200,
+            'message' => 'Data ada',
+            'data' => $data,
+        ]);
+    }
+
     public function searchPasien(Request $request)
     {
         $norm = $request->norm;

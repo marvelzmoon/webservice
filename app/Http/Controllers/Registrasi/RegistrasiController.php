@@ -10,9 +10,7 @@ use App\Models\Pasien;
 use App\Models\Poliklinik;
 use App\Models\ReferensiMobilejknBpjs;
 use App\Models\RegPeriksaModel;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
@@ -20,6 +18,29 @@ use function Pest\Laravel\json;
 
 class RegistrasiController extends Controller
 {
+    public function getdata(Request $request)
+    {
+        $query = RegPeriksaModel::where('tgl_registrasi', $request->tglperiksa)->limit(5000);
+
+        // Validasi query kosong
+        if (!$query->exists()) {
+            return response()->json([
+                'code'    => 204,
+                'message' => 'Data tidak ditemukan',
+                'data'    => [],
+            ]);
+        }
+
+        // Jika ada data → paginate
+        $data = $query->paginate(50);
+
+        return response()->json([
+            'code' => 200,
+            'message' => 'Data ada',
+            'data' => $data,
+        ]);
+    }
+
     public function post(Request $request)
     {
         $kddokter = $request->dokter;
