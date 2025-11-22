@@ -18,37 +18,13 @@ class ApiTokenMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // $token = $request->bearerToken();
-
-        // if (!$token) {
-        //     return response()->json(['error' => 'Token missing'], 401);
-        // }
-
-        // // hash token dari header
-        // $hashed = hash('sha256', $token);
-
-        // $user = IoUser::where('api_token', $hashed)->first();
-
-        // if (!$user) {
-        //     return response()->json(['error' => 'Invalid token'], 401);
-        // }
-
-        // // cek expired
-        // if (Carbon::now()->greaterThan($user->api_token_expires_at)) {
-        //     return response()->json(['error' => 'Token expired'], 401);
-        // }
-
-        // // simpan user ke request
-        // $request->merge(['auth_user' => $user]);
-
-        if ($request->header('Authorization')==null) {
+        if ($request->header('Authorization') == null) {
             return response()->json(['code' => 401, 'message' => 'Unauthorized'], 401);
         }
         $data = Crypt::decrypt($request->header('Authorization'));
 
         $username = $data['username'];
         $expired = $data['expired'];
-
 
         if (!isset($username)) {
             return response()->json(['code' => 401, 'message' => 'Unauthorized'], 401);

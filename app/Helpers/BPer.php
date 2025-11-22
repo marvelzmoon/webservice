@@ -56,4 +56,42 @@ class BPer
             return $diff->d . ' Hr';
         }
     }
+
+    public static function hitungUmur1($tanggalLahir, $tanggalDaftar)
+    {
+        if (!$tanggalLahir || $tanggalLahir == '0000-00-00') {
+            return [
+                'tahun' => 0,
+                'bulan' => 0,
+                'hari'  => 0
+            ];
+        }
+
+        try {
+            $dob = Carbon::parse($tanggalLahir);
+            $daftar = Carbon::parse($tanggalDaftar);
+        } catch (\Exception $e) {
+            return [
+                'tahun' => 0,
+                'bulan' => 0,
+                'hari'  => 0
+            ];
+        }
+
+        // 🔥 Selisih dari tanggal lahir ke tanggal daftar
+        $diff = $dob->diff($daftar);
+
+        return [
+            'tahun' => $diff->y,
+            'bulan' => $diff->m,
+            'hari'  => $diff->d,
+        ];
+    }
+
+    public static function formatUmur($tanggalLahir, $tanggalDaftar)
+    {
+        $u = self::hitungUmur1($tanggalLahir, $tanggalDaftar);
+
+        return "{$u['tahun']} Th {$u['bulan']} Bl {$u['hari']} Hr";
+    }
 }

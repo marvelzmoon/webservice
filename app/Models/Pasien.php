@@ -12,6 +12,7 @@ class Pasien extends Model
     protected $keyType = 'string';
     protected $primaryKey = 'no_rkm_medis';
     protected $fillable = [
+        'no_rkm_medis',
         'nm_pasien',
         'no_ktp',
         'jk',
