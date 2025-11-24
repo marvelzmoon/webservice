@@ -36,11 +36,10 @@ Route::middleware(['api_token'])->group(function () {
         Route::prefix('taskid')->group(function () {
             Route::controller(JknTaskidController::class)->group(function () {
                 Route::post('/post', 'post');
-                //buat update pengiriman taskid
+                Route::post('/data', 'getdata');
+                Route::post('/send', 'send');
             });
         });
-
-        //buat add antrian farmasi
     });
 
     Route::prefix('registrasi')->group(function () {
@@ -49,6 +48,7 @@ Route::middleware(['api_token'])->group(function () {
             Route::post('/post', 'post');
             Route::post('/add-antrol', 'addantrian');
             Route::post('/batal-periksa', 'batalPeriksa');
+            Route::post('/add-antrol-farmasi', 'addAntrianFarmasi');
         });
     });
 

@@ -5,7 +5,11 @@ namespace App\Http\Controllers\Jkn;
 use App\Helpers\AuthHelper;
 use App\Http\Controllers\Controller;
 use App\Models\IoAntrianTaskid;
+use App\Models\IoReferensiAntrianFarmasi;
+use App\Models\ReferensiMobilejknBpjs;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 class JknTaskidController extends Controller
@@ -58,6 +62,35 @@ class JknTaskidController extends Controller
         ]);
 
         /* ============================================================
+            RULE 0: Validasi perbedaan waktu untuk TaskID 4 - 7
+            - Task berikutnya harus > task sebelumnya
+            - Minimal beda 1 menit (Y-m-d H:i)
+        ============================================================ */
+        if ($taskid > 3 && $taskid <= 7) {
+
+            // Nama field task sebelumnya, contoh: taskid_3, taskid_4
+            $prevField = 'taskid_' . ($taskid - 1);
+
+            // Ambil waktu task sebelumnya
+            $prevTime = $task->$prevField ?? null;
+
+            if ($prevTime) {
+
+                // Normalisasi format ke Y-m-d H:i
+                $prevTimeFmt = date('Y-m-d H:i', strtotime($prevTime));
+                $currTimeFmt = date('Y-m-d H:i', strtotime($request->waktu));
+
+                // Task berikutnya harus lebih besar minimal 1 menit
+                if (strtotime($currTimeFmt) <= strtotime($prevTimeFmt)) {
+                    return response()->json([
+                        'code'    => 201,
+                        'message' => "Waktu TaskID {$taskid} harus lebih besar dari TaskID " . ($taskid - 1)
+                    ]);
+                }
+            }
+        }
+
+        /* ============================================================
             RULE 1: Jika taskid_99 sudah terisi → semuanya diblokir
         ============================================================= */
         if ($taskid !== 99 && !empty($task->taskid_99)) {
@@ -71,7 +104,6 @@ class JknTaskidController extends Controller
             RULE 2: Validasi khusus TaskID 99
         ============================================================= */
         if ($taskid == 99) {
-
             // TaskID 3 harus sudah terisi
             if (empty($task->taskid_3)) {
                 return response()->json([
@@ -156,5 +188,117 @@ class JknTaskidController extends Controller
             'message' => "TaskID {$taskid} berhasil disimpan.",
             'token'   => AuthHelper::genToken()
         ]);
+    }
+
+    public function getdata(Request $request)
+    {
+        if (config('confsistem.add_farmasi') == 'YA') {
+            $task = ReferensiMobilejknBpjs::where('tanggalperiksa', $request->tanggal)
+                ->join('io_antrian_taskid', 'io_antrian_taskid.nobooking', '=', 'referensi_mobilejkn_bpjs.nobooking')
+                ->join('io_referensi_antrian_farmasi', 'referensi_mobilejkn_bpjs.nobooking', '=', 'io_referensi_antrian_farmasi.nobooking')
+                ->select('io_antrian_taskid.*', 'io_referensi_antrian_farmasi.jenisresep', 'referensi_mobilejkn_bpjs.nobooking')
+                ->get();
+        } else {
+            $task = ReferensiMobilejknBpjs::where('tanggalperiksa', $request->tanggal)
+                ->join('io_antrian_taskid', 'io_antrian_taskid.nobooking', '=', 'referensi_mobilejkn_bpjs.nobooking')
+                ->select('io_antrian_taskid.*', 'referensi_mobilejkn_bpjs.nobooking')
+                ->get();
+        }
+
+        if (!$task) {
+            return response()->json([
+                'code' => 204,
+                'message' => 'Data tidak ditemukan'
+            ]);
+        }
+
+        return response()->json([
+            'code' => 200,
+            'message' => 'Data ada',
+            'data' => $task,
+            'token' => AuthHelper::genToken(),
+        ]);
+    }
+
+    public function send(Request $request)
+    {
+        $rules = [
+            'nobooking' => 'required',
+            'taskid'    => 'required',
+            'waktu'     => 'required',
+        ];
+
+        $data = [
+            'nobooking' => $request->nobooking,
+            'taskid' => $request->taskid,
+            'waktu' => $request->waktu,
+        ];
+
+        if (config('confsistem.add_farmasi') == 'YA') {
+            $rules['jenisresep'] = 'required';
+
+            $data['jenisresep'] = $request->jenisresep;
+        }
+
+        $request->validate($rules, [
+            'nobooking.required' => 'Nobooking tidak boleh kosong',
+            'taskid.required'    => 'Taskid tidak boleh kosong',
+            'waktu.required'     => 'Waktu tidak boleh kosong',
+            'jenisresep.required' => 'Jenis resep tidak boleh kosong',
+        ]);
+
+        $cek = IoAntrianTaskid::find($request->nobooking);
+        $tid = "taskid_{$request->taskid}";
+        $tidsend = "taskid_{$request->taskid}_send";
+
+        if (!$cek->$tid) {
+            return response()->json([
+                'code' => 201,
+                'message' => "Taskid " . $request->taskid . " masih kosong"
+            ]);
+        }
+
+        if ($cek->$tidsend != NULL) {
+            return response()->json([
+                'code' => 201,
+                'message' => 'Taskid ' . $request->taskid . ' sudah terkirim'
+            ]);
+        }
+
+        $curl = curl_init();
+
+        curl_setopt_array($curl, array(
+            CURLOPT_URL => config('confsistem.addapi_url') . '/antrol/taskid-kirim.php', // your preferred url/
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => "",
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 30000,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => "POST",
+            CURLOPT_POSTFIELDS => json_encode($data),
+            CURLOPT_HTTPHEADER => array(
+                // Set here requred headers
+                "accept: */*",
+                "accept-language: en-US,en;q=0.8",
+                "content-type: application/json",
+            ),
+        ));
+
+        $response = curl_exec($curl);
+        $err = curl_error($curl);
+        $dResponse = json_decode($response, true);
+
+        // Jika sukses
+        if ($dResponse['metadata']['code'] == 200) {
+            IoAntrianTaskid::where('nobooking', $request->nobooking)->update(['taskid_' . $request->taskid  . '_send' => Carbon::now()]);
+
+            return response()->json([
+                'code' => 200,
+                'message' => 'Taskid ' . $request->taskid . ' berhasil terkirim',
+                'token'   => AuthHelper::genToken()
+            ]);
+        } else {
+            return $response;
+        }
     }
 }

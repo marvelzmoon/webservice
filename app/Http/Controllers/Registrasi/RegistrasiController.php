@@ -6,10 +6,12 @@ use App\Helpers\AuthHelper;
 use App\Helpers\BPer;
 use App\Http\Controllers\Controller;
 use App\Models\Dokter;
+use App\Models\IoReferensiAntrianFarmasi;
 use App\Models\Pasien;
 use App\Models\Poliklinik;
 use App\Models\ReferensiMobilejknBpjs;
 use App\Models\RegPeriksaModel;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -490,6 +492,115 @@ class RegistrasiController extends Controller
             return response()->json([
                 'code' => 201,
                 'message' => 'Gagal membatalkan Pendaftaran Periksa No Rawat ' . $data->no_rawat,
+                'token' => AuthHelper::genToken(),
+            ]);
+        } else {
+            return response()->json([
+                'code' => $dResponse['metadata']['code'],
+                'message' => $dResponse['metadata']['message'],
+                'token' => AuthHelper::genToken(),
+            ]);
+        }
+    }
+
+    public function addAntrianFarmasi(Request $request)
+    {
+        $validator = Validator::make(
+            $request->all(),
+            [
+                'kodebooking'   => 'required|string',
+                'jenisresep'    => 'required|string|in:tidak ada,racikan,non racikan',
+                'keterangan'    => 'required|string',
+            ],
+            [
+                'kodebooking.required'  => 'kodebooking tidak boleh kosong.',
+                'jenisresep.required'   => 'jenisresep tidak boleh kosong.',
+                'jenisresep.in'         => 'jenisresep hanya boleh diisi racikan atau non racikan.',
+                'keterangan.required'   => 'keterangan tidak boleh kosong.',
+            ]
+        );
+
+        if ($validator->fails()) {
+            return response()->json([
+                'code'    => 204,
+                'message' => $validator->errors()->first(),
+            ], 200);
+        }
+
+        $nobooking = $request->kodebooking;
+
+        //cek antrian
+        $refAntrol = ReferensiMobilejknBpjs::where('nobooking', $nobooking)->first();
+
+        if (!$refAntrol) {
+            return response()->json([
+                'code' => 201,
+                'message' => 'Referensi Antrian tidak ditemukan'
+            ]);
+        }
+
+        if ($refAntrol->status == 'Batal') {
+            return response()->json([
+                'code' => 201,
+                'message' => 'Gagal proses, Pendaftaran antrian sudah dibatalkan!'
+            ]);
+        }
+
+        $cari = IoReferensiAntrianFarmasi::find($nobooking);
+
+        if ($cari) {
+            return response()->json([
+                'code' => 201,
+                'message' => 'Antrian farmasi dengan nobooking ' . $nobooking . ' sudah ada!'
+            ]);
+        }
+
+        $cariMax = IoReferensiAntrianFarmasi::where('tgl', $refAntrol->tanggalperiksa)->count();
+
+        $data = [
+            'nobooking' => $nobooking,
+            'jenisresep' => $request->jenisresep,
+            'nomorantrean' => (int)($cariMax + 1),
+            'keterangan' => $request->keterangan,
+            'tgl' => $refAntrol->tanggalperiksa
+        ];
+
+        $curl = curl_init();
+
+        curl_setopt_array($curl, array(
+            CURLOPT_URL => config('confsistem.addapi_url') . '/antrol/tambah-antrian-farmasi.php', // your preferred url/
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => "",
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 30000,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => "POST",
+            CURLOPT_POSTFIELDS => json_encode($data),
+            CURLOPT_HTTPHEADER => array(
+                // Set here requred headers
+                "accept: */*",
+                "accept-language: en-US,en;q=0.8",
+                "content-type: application/json",
+            ),
+        ));
+
+        $response = curl_exec($curl);
+        $err = curl_error($curl);
+
+        $dResponse = json_decode($response, true);
+
+        if ($dResponse['metadata']['code'] == 200) {
+            $data['validasi'] = Carbon::now()->format('Y-m-d H:i:s');
+
+            IoReferensiAntrianFarmasi::create($data);
+
+            return response()->json([
+                'code' => 200,
+                'message' => 'Pendaftaran Antrian Farmasi berhasil',
+                'data' => [
+                    'nobooking' => $data['nobooking'],
+                    'noantrian' => $data['nomorantrean'],
+                ],
                 'token' => AuthHelper::genToken(),
             ]);
         } else {
