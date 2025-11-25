@@ -12,7 +12,9 @@ use App\Models\Poliklinik;
 use App\Models\ReferensiMobilejknBpjs;
 use App\Models\RegPeriksaModel;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
@@ -268,54 +270,36 @@ class RegistrasiController extends Controller
                 "keterangan" => "Peserta harap 30 menit lebih awal guna pencatatan administrasi."
             ];
 
-            $curl = curl_init();
+            $apiSend = new Request($jsonAntrol);
 
-            curl_setopt_array($curl, array(
-                CURLOPT_URL => config('confsistem.addapi_url') . '/antrol/tambah-antrian.php', // your preferred url/
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_ENCODING => "",
-                CURLOPT_MAXREDIRS => 10,
-                CURLOPT_TIMEOUT => 30000,
-                CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-                CURLOPT_CUSTOMREQUEST => "POST",
-                CURLOPT_POSTFIELDS => json_encode($jsonAntrol),
-                CURLOPT_HTTPHEADER => array(
-                    // Set here requred headers
-                    "accept: */*",
-                    "accept-language: en-US,en;q=0.8",
-                    "content-type: application/json",
-                ),
-            ));
+            $apiResponse = App::call(
+                'App\Http\Controllers\Jkn\JknApiAntrolController@daftarAntrian',
+                ['request' => $apiSend]
+            );
 
-            $response = curl_exec($curl);
-            $err = curl_error($curl);
+            if ($apiResponse instanceof JsonResponse) {
+                $decodeResponse = $apiResponse->getData(true);
 
-            $dResponse = json_decode($response, true);
+                if ($decodeResponse['code'] == 200) {
+                    ReferensiMobilejknBpjs::where('nobooking', $regAntrol->nobooking)->update([
+                        'statuskirim' => 'Sudah'
+                    ]);
 
-            if ($dResponse['metadata']['code'] == 200) {
-                ReferensiMobilejknBpjs::where('nobooking', $regAntrol->nobooking)->update([
-                    'statuskirim' => 'Sudah'
-                ]);
+                    return response()->json([
+                        'code' => 200,
+                        'message' => 'Pendaftaran Antrian berhasil',
+                        'data' => [
+                            'nobooking' => $regAntrol->nobooking,
+                            'norawat' => $regPeriksa->no_rawat,
+                        ],
+                        'token' => AuthHelper::genToken(),
+                    ]);
+                }
 
-                return response()->json([
-                    'code' => 200,
-                    'message' => 'Data berhasil dibuat',
-                    'data' => [
-                        'nobooking' => $regAntrol->nobooking,
-                        'norawat' => $regPeriksa->no_rawat,
-                    ],
-                    'token' => AuthHelper::genToken(),
-                ]);
-            } else {
-                return response()->json([
-                    'code' => 200,
-                    'message' => 'Tersimpan, gagal kirim antrean ke BPJS No Rawat : ' . $regAntrol->no_rawat,
-                    'data' => [
-                        'norawat' => $regPeriksa->no_rawat,
-                    ],
-                    'token' => AuthHelper::genToken(),
-                ]);
+                return response()->json($decodeResponse);
             }
+
+            return response()->json($apiResponse);
         } catch (\Throwable $e) {
             DB::rollBack();
 
@@ -367,51 +351,36 @@ class RegistrasiController extends Controller
                 "keterangan" => "Peserta harap 30 menit lebih awal guna pencatatan administrasi."
             ];
 
-            $curl = curl_init();
+            $apiSend = new Request($jsonAntrol);
 
-            curl_setopt_array($curl, array(
-                CURLOPT_URL => config('confsistem.addapi_url') . '/antrol/tambah-antrian.php', // your preferred url/
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_ENCODING => "",
-                CURLOPT_MAXREDIRS => 10,
-                CURLOPT_TIMEOUT => 30000,
-                CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-                CURLOPT_CUSTOMREQUEST => "POST",
-                CURLOPT_POSTFIELDS => json_encode($jsonAntrol),
-                CURLOPT_HTTPHEADER => array(
-                    // Set here requred headers
-                    "accept: */*",
-                    "accept-language: en-US,en;q=0.8",
-                    "content-type: application/json",
-                ),
-            ));
+            $apiResponse = App::call(
+                'App\Http\Controllers\Jkn\JknApiAntrolController@daftarAntrian',
+                ['request' => $apiSend]
+            );
 
-            $response = curl_exec($curl);
-            $err = curl_error($curl);
+            if ($apiResponse instanceof JsonResponse) {
+                $decodeResponse = $apiResponse->getData(true);
 
-            $dResponse = json_decode($response, true);
+                if ($decodeResponse['code'] == 200) {
+                    ReferensiMobilejknBpjs::where('nobooking', $regAntrol->nobooking)->update([
+                        'statuskirim' => 'Sudah'
+                    ]);
 
-            if ($dResponse['metadata']['code'] == 200) {
-                ReferensiMobilejknBpjs::where('nobooking', $regAntrol->nobooking)->update([
-                    'statuskirim' => 'Sudah'
-                ]);
+                    return response()->json([
+                        'code' => 200,
+                        'message' => 'Pendaftaran Antrian berhasil',
+                        'data' => [
+                            'nobooking' => $regAntrol->nobooking,
+                            'norawat' => $regPeriksa->no_rawat,
+                        ],
+                        'token' => AuthHelper::genToken(),
+                    ]);
+                }
 
-                return response()->json([
-                    'code' => 200,
-                    'message' => 'Pendaftaran Antrian berhasil',
-                    'data' => [
-                        'nobooking' => $regAntrol->nobooking,
-                        'norawat' => $regPeriksa->no_rawat,
-                    ],
-                    'token' => AuthHelper::genToken(),
-                ]);
-            } else {
-                return response()->json([
-                    'code' => $dResponse['metadata']['code'],
-                    'message' => $dResponse['metadata']['message'],
-                    'token' => AuthHelper::genToken(),
-                ]);
+                return response()->json($decodeResponse);
             }
+
+            return response()->json($apiResponse);
         }
     }
 
@@ -448,59 +417,46 @@ class RegistrasiController extends Controller
             ]);
         }
 
-        $curl = curl_init();
+        $xdata = [
+            'kodebooking' => $data->nobooking,
+            'keterangan' => $request->ketbatal
+        ];
 
-        curl_setopt_array($curl, array(
-            CURLOPT_URL => config('confsistem.addapi_url') . '/antrol/batal-antrian.php', // your preferred url/
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_ENCODING => "",
-            CURLOPT_MAXREDIRS => 10,
-            CURLOPT_TIMEOUT => 30000,
-            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-            CURLOPT_CUSTOMREQUEST => "POST",
-            CURLOPT_POSTFIELDS => json_encode([
-                'kodebooking' => $data->nobooking,
-                'keterangan' => $request->ketbatal
-            ]),
-            CURLOPT_HTTPHEADER => array(
-                // Set here requred headers
-                "accept: */*",
-                "accept-language: en-US,en;q=0.8",
-                "content-type: application/json",
-            ),
-        ));
+        $apiSend = new Request($xdata);
 
-        $response = curl_exec($curl);
-        $err = curl_error($curl);
+        $apiResponse = App::call(
+            'App\Http\Controllers\Jkn\JknApiAntrolController@batalAntrean',
+            ['request' => $apiSend]
+        );
 
-        $dResponse = json_decode($response, true);
+        if ($apiResponse instanceof JsonResponse) {
+            $decodeResponse = $apiResponse->getData(true);
 
-        if ($dResponse['metadata']['code'] == 200) {
-            //update status refmjkn
-            if ($data && $data->no_rawat) {
-                ReferensiMobilejknBpjs::where('nobooking', $data->nobooking)->update(['status' => 'Batal']);
-                RegPeriksaModel::where('no_rawat', $data->no_rawat)->delete();
+            if ($decodeResponse['code'] == 200) {
+                //update status refmjkn
+                if ($data && $data->no_rawat) {
+                    ReferensiMobilejknBpjs::where('nobooking', $data->nobooking)->update(['status' => 'Batal']);
+                    RegPeriksaModel::where('no_rawat', $data->no_rawat)->delete();
+
+                    return response()->json([
+                        'code' => 200,
+                        'message' => 'Pendaftaran Periksa No Rawat ' . $data->no_rawat . ' | nobooking ' . $data->nobooking . ' berhasil dibatalkan!',
+                        'token' => AuthHelper::genToken(),
+                    ]);
+                }
+                //end update status refmjkn
 
                 return response()->json([
-                    'code' => 200,
-                    'message' => 'Pendaftaran Periksa No Rawat ' . $data->no_rawat . ' | nobooking ' . $data->nobooking . ' berhasil dibatalkan!',
+                    'code' => 201,
+                    'message' => 'Gagal membatalkan Pendaftaran Periksa No Rawat ' . $data->no_rawat,
                     'token' => AuthHelper::genToken(),
                 ]);
             }
-            //end update status refmjkn
 
-            return response()->json([
-                'code' => 201,
-                'message' => 'Gagal membatalkan Pendaftaran Periksa No Rawat ' . $data->no_rawat,
-                'token' => AuthHelper::genToken(),
-            ]);
-        } else {
-            return response()->json([
-                'code' => $dResponse['metadata']['code'],
-                'message' => $dResponse['metadata']['message'],
-                'token' => AuthHelper::genToken(),
-            ]);
+            return response()->json($decodeResponse);
         }
+
+        return response()->json($apiResponse);
     }
 
     public function addAntrianFarmasi(Request $request)
@@ -565,50 +521,35 @@ class RegistrasiController extends Controller
             'tgl' => $refAntrol->tanggalperiksa
         ];
 
-        $curl = curl_init();
+        $apiSend = new Request($data);
 
-        curl_setopt_array($curl, array(
-            CURLOPT_URL => config('confsistem.addapi_url') . '/antrol/tambah-antrian-farmasi.php', // your preferred url/
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_ENCODING => "",
-            CURLOPT_MAXREDIRS => 10,
-            CURLOPT_TIMEOUT => 30000,
-            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-            CURLOPT_CUSTOMREQUEST => "POST",
-            CURLOPT_POSTFIELDS => json_encode($data),
-            CURLOPT_HTTPHEADER => array(
-                // Set here requred headers
-                "accept: */*",
-                "accept-language: en-US,en;q=0.8",
-                "content-type: application/json",
-            ),
-        ));
+        $apiResponse = App::call(
+            'App\Http\Controllers\Jkn\JknApiAntrolController@daftarAntrianFarmasi',
+            ['request' => $apiSend]
+        );
 
-        $response = curl_exec($curl);
-        $err = curl_error($curl);
+        if ($apiResponse instanceof JsonResponse) {
+            $decodeResponse = $apiResponse->getData(true);
 
-        $dResponse = json_decode($response, true);
+            if ($decodeResponse['code'] == 200) {
+                $data['validasi'] = Carbon::now()->format('Y-m-d H:i:s');
 
-        if ($dResponse['metadata']['code'] == 200) {
-            $data['validasi'] = Carbon::now()->format('Y-m-d H:i:s');
+                IoReferensiAntrianFarmasi::create($data);
 
-            IoReferensiAntrianFarmasi::create($data);
+                return response()->json([
+                    'code' => 200,
+                    'message' => 'Pendaftaran Antrian Farmasi berhasil',
+                    'data' => [
+                        'nobooking' => $data['nobooking'],
+                        'noantrian' => $data['nomorantrean'],
+                    ],
+                    'token' => AuthHelper::genToken(),
+                ]);
+            }
 
-            return response()->json([
-                'code' => 200,
-                'message' => 'Pendaftaran Antrian Farmasi berhasil',
-                'data' => [
-                    'nobooking' => $data['nobooking'],
-                    'noantrian' => $data['nomorantrean'],
-                ],
-                'token' => AuthHelper::genToken(),
-            ]);
-        } else {
-            return response()->json([
-                'code' => $dResponse['metadata']['code'],
-                'message' => $dResponse['metadata']['message'],
-                'token' => AuthHelper::genToken(),
-            ]);
+            return response()->json($decodeResponse);
         }
+
+        return response()->json($apiResponse);
     }
 }

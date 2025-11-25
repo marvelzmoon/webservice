@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Jkn\JknApiAntrolController;
 use App\Http\Controllers\Jkn\JknSuratkontrolController;
 use App\Http\Controllers\Jkn\JknTaskidController;
 use App\Http\Controllers\Master\PasienController;
@@ -79,4 +80,23 @@ Route::middleware(['api_token'])->group(function () {
     Route::post('/master/poliklinik', action: [PoliklinikController::class, 'store']);
     Route::get('/master/dokter', action: [DokterController::class, 'index']);
     Route::post('/master/dokter', action: [DokterController::class, 'store']);
+});
+
+Route::prefix('api-antrol')->group(function () {
+    Route::controller(JknApiAntrolController::class)->group(function () {
+        Route::get('/ref/poli', 'refPoli');
+        Route::get('/ref/dokter', 'refDokter');
+        Route::post('/ref/jadwal-dokter', 'refJadwalDokter');
+        Route::get('/ref/poli-fp', 'refPoliFP');
+        Route::post('/ref/pasien-fp', 'refPasienFP');
+        Route::post('/antrian-tanggal', 'antrianPerTgl');
+        Route::post('/antrian-nobooking', 'antrianPerKbo');
+        Route::get('/antrian-aktif', 'antrianAktif');
+        Route::post('/antrian-nobooking-detail', 'antrianAktifDetail');
+        Route::post('/antrian/taskid', 'listTaskid');
+        Route::post('/antrian/updatewaktu', 'updateWaktuAntrian');
+        Route::post('/daftar/antrian', 'daftarAntrian');
+        Route::post('/daftar/antrian/farmasi', 'daftarAntrianFarmasi');
+        Route::post('/batal/antrian', 'batalAntrean');
+    });
 });
