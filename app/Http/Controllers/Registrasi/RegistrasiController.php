@@ -6,6 +6,7 @@ use App\Helpers\AuthHelper;
 use App\Helpers\BPer;
 use App\Http\Controllers\Controller;
 use App\Models\Dokter;
+use App\Models\IoAntrianTaskid;
 use App\Models\IoReferensiAntrianFarmasi;
 use App\Models\Pasien;
 use App\Models\Poliklinik;
@@ -24,19 +25,7 @@ class RegistrasiController extends Controller
 {
     public function getdata(Request $request)
     {
-        $query = RegPeriksaModel::where('tgl_registrasi', $request->tglperiksa)->limit(5000);
-
-        // Validasi query kosong
-        if (!$query->exists()) {
-            return response()->json([
-                'code'    => 204,
-                'message' => 'Data tidak ditemukan',
-                'data'    => [],
-            ]);
-        }
-
-        // Jika ada data → paginate
-        $data = $query->paginate(50);
+        $data = RegPeriksaModel::whereBetween('tgl_registrasi', [$request->tglawal, $request->tglakhir])->get();
 
         return response()->json([
             'code' => 200,
@@ -384,7 +373,7 @@ class RegistrasiController extends Controller
         }
     }
 
-    public function batalPeriksa(Request $request)
+    public function batalPeriksa(Request $request) // FK billing belum ketemu
     {
         $validator = Validator::make(
             $request->all(),
@@ -413,50 +402,83 @@ class RegistrasiController extends Controller
         if (!$data) {
             return response()->json([
                 'code' => 201,
-                'message' => 'Data tidak ditemukan atau status bukan selain Batal.'
+                'message' => 'Data tidak ditemukan atau status selain Batal.'
             ]);
         }
 
-        $xdata = [
-            'kodebooking' => $data->nobooking,
-            'keterangan' => $request->ketbatal
-        ];
+        $cek = IoAntrianTaskid::find($data->nobooking);
 
-        $apiSend = new Request($xdata);
+        if (empty($cek) || empty($cek->taskid_3)) {
+            $xdata = [
+                'kodebooking' => $data->nobooking,
+                'keterangan' => $request->ketbatal
+            ];
 
-        $apiResponse = App::call(
-            'App\Http\Controllers\Jkn\JknApiAntrolController@batalAntrean',
-            ['request' => $apiSend]
-        );
+            $apiSend = new Request($xdata);
 
-        if ($apiResponse instanceof JsonResponse) {
-            $decodeResponse = $apiResponse->getData(true);
+            $apiResponse = App::call(
+                'App\Http\Controllers\Jkn\JknApiAntrolController@batalAntrean',
+                ['request' => $apiSend]
+            );
 
-            if ($decodeResponse['code'] == 200) {
-                //update status refmjkn
-                if ($data && $data->no_rawat) {
-                    ReferensiMobilejknBpjs::where('nobooking', $data->nobooking)->update(['status' => 'Batal']);
-                    RegPeriksaModel::where('no_rawat', $data->no_rawat)->delete();
+            if ($apiResponse instanceof JsonResponse) {
+                $decodeResponse = $apiResponse->getData(true);
+
+                if ($decodeResponse['code'] == 200) {
+                    //update status refmjkn
+                    if ($data && $data->no_rawat) {
+                        ReferensiMobilejknBpjs::where('nobooking', $data->nobooking)->update(['status' => 'Batal']);
+                        RegPeriksaModel::where('no_rawat', $data->no_rawat)->delete();
+
+                        return response()->json([
+                            'code' => 200,
+                            'message' => 'Pendaftaran Periksa No Rawat ' . $data->no_rawat . ' | nobooking ' . $data->nobooking . ' berhasil dibatalkan!',
+                            'token' => AuthHelper::genToken(),
+                        ]);
+                    }
+                    //end update status refmjkn
 
                     return response()->json([
-                        'code' => 200,
-                        'message' => 'Pendaftaran Periksa No Rawat ' . $data->no_rawat . ' | nobooking ' . $data->nobooking . ' berhasil dibatalkan!',
+                        'code' => 201,
+                        'message' => 'Gagal membatalkan Pendaftaran Periksa No Rawat ' . $data->no_rawat,
                         'token' => AuthHelper::genToken(),
                     ]);
                 }
-                //end update status refmjkn
 
-                return response()->json([
-                    'code' => 201,
-                    'message' => 'Gagal membatalkan Pendaftaran Periksa No Rawat ' . $data->no_rawat,
-                    'token' => AuthHelper::genToken(),
-                ]);
+                return response()->json($decodeResponse);
             }
 
-            return response()->json($decodeResponse);
-        }
+            return response()->json($apiResponse);
+        } else {
+            $xdata = [
+                'kodebooking' => $data->nobooking,
+                'taskid' => 99,
+                'waktu' => date('Y-m-d H:i:s')
+            ];
 
-        return response()->json($apiResponse);
+            $apiSend = new Request($xdata);
+
+            $apiResponse = App::call(
+                'App\Http\Controllers\Jkn\JknTaskidController@post',
+                ['request' => $apiSend]
+            );
+
+            if ($apiResponse instanceof JsonResponse) {
+                $decodeResponse = $apiResponse->getData(true);
+
+                if ($decodeResponse['code'] == 200) {
+                    return response()->json([
+                        'code' => 200,
+                        'message' => 'Pendaftaran dibatalkan dengan taskid 99, data pemeriksaan tidak dihapus',
+                        'token' => AuthHelper::genToken(),
+                    ]);
+                }
+
+                return response()->json($decodeResponse);
+            }
+
+            return response()->json($apiResponse);
+        }
     }
 
     public function addAntrianFarmasi(Request $request)

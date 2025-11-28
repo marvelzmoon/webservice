@@ -7,6 +7,7 @@ use App\Models\Kabupaten;
 use App\Models\Kecamatan;
 use App\Models\Kelurahan;
 use App\Models\Penjab;
+use App\Models\Wilayah;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -76,5 +77,47 @@ class ReferensiController extends Controller
     {
         $data = DB::table('propinsi')->get();
         return response()->json($data);
+    }
+
+    public function provinsi()
+    {
+        $data = Wilayah::select('kode', 'nama')
+            ->whereRaw('CHAR_LENGTH(kode) = 2')
+            ->orderBy('kode', 'asc')
+            ->get();
+
+        return response()->json($data);
+    }
+
+    public function getWilayah(Request $request)
+    {
+        $wil = [
+            2 => [5],
+            5 => [8],
+            8 => [13],
+        ];
+
+        $id = $request->kode;
+        $n  = strlen($id);
+
+        if (!isset($wil[$n])) {
+            return response()->json([
+                'code' => 201,
+                'message' => 'Kode wilayah tidak sesuai'
+            ]);
+        }
+
+        $m = $wil[$n][0]; // target char length
+
+        $data = Wilayah::whereRaw("LEFT(kode, ?) = ?", [$n, $id])
+            ->whereRaw("CHAR_LENGTH(kode) = ?", [$m])
+            ->orderBy('nama')
+            ->get();
+
+        return response()->json([
+            'code' => 200,
+            'message' => 'Ok',
+            'data' => $data,
+        ]);
     }
 }

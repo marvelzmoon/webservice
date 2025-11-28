@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Jkn;
 use App\Helpers\AuthHelper;
 use App\Http\Controllers\Controller;
 use App\Models\IoAntrianTaskid;
-use App\Models\IoReferensiAntrianFarmasi;
 use App\Models\ReferensiMobilejknBpjs;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;

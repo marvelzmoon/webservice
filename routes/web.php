@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\Auth;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Jkn\JknApiAntrolController;
 use App\Http\Controllers\Jkn\JknSuratkontrolController;
@@ -16,8 +15,6 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('welcome');
 });
-
-// Route::get('/auth', action: [ Auth::class,'index']);
 
 Route::post('/login', action: [AuthController::class, 'login']);
 Route::post('/auth/check-username', action: [AuthController::class, 'checkUsername']);
@@ -64,6 +61,8 @@ Route::middleware(['api_token'])->group(function () {
             Route::get('/bahasa-pasien', 'bahasapasien');
             Route::get('/cacat-fisik', 'cacatfisik');
             Route::get('/propinsi', 'propinsi');
+            Route::get('/provinsi', 'provinsi');
+            Route::post('/ambil-wilayah', 'getWilayah');
         });
     });
 
