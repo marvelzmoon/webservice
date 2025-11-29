@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Erm\DataKlinis\RiwayatController;
 use App\Http\Controllers\Jkn\JknApiAntrolController;
 use App\Http\Controllers\Jkn\JknSuratkontrolController;
 use App\Http\Controllers\Jkn\JknTaskidController;
@@ -72,6 +73,20 @@ Route::middleware(['api_token'])->group(function () {
             Route::post('/search', 'searchPasien');
             Route::post('/create', 'createPasien');
             Route::post('/destroy', 'destroy');
+        });
+    });
+
+    Route::prefix('erm')->group(function () {
+        Route::prefix('data-klinis')->group(function () {
+            Route::controller(RiwayatController::class)->group(function () {
+                Route::post('/riwayat/getdata', 'getdata');
+                Route::post('/riwayat/soap', 'soapie');
+                Route::post('/riwayat/soap/multi', 'soapiemulti');
+                Route::post('/riwayat/sepbpjs', 'datasep');
+                Route::post('/riwayat/awal/medis', 'awalMedis');
+                Route::post('/riwayat/awal/keperawatan', 'awalKeperawatan');
+                Route::post('/riwayat/diagnosa-icd10', 'diagnosaIcd10');
+            });
         });
     });
 
