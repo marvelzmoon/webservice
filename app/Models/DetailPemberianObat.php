@@ -1,21 +1,40 @@
 <?php
 
-namespace App\Models\Khanza;
+namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
 class DetailPemberianObat extends Model
 {
     public $timestamps = false;
-    protected $connection = "second_db";
     protected $table = "detail_pemberian_obat";
     public $incrementing = false;
     protected $keyType = 'string';
-    protected $primaryKey = ['tgl_perawatan','jam','no_rawat','kodae_brng','no_batch','no_faktur'];
+    protected $primaryKey = ['tgl_perawatan', 'jam', 'no_rawat', 'kode_brng', 'no_batch', 'no_faktur'];
     protected $fillable = [
-        // "no_rawat",
-        // "nama_bayar",
-        // "besarppn",
-        // "besar_bayar"
+        'tgl_perawatan',
+        'jam',
+        'no_rawat',
+        'kode_brng',
+        'h_beli',
+        'biaya_obat',
+        'jml',
+        'embalase',
+        'tuslah',
+        'total',
+        'status',
+        'kd_bangsal',
+        'no_batch',
+        'no_faktur'
     ];
+
+    public function databarang()
+    {
+        return $this->belongsTo(DataBarang::class, 'kode_brng', 'kode_brng');
+    }
+
+    public function bangsal()
+    {
+        return $this->belongsTo(Bangsal::class, 'kd_bangsal', 'kd_bangsal');
+    }
 }

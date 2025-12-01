@@ -76,7 +76,7 @@ Route::middleware(['api_token'])->group(function () {
         });
     });
 
-    Route::prefix('erm')->group(function () {
+    Route::prefix('erm')->group(function () { // pendding dulu
         Route::prefix('data-klinis')->group(function () {
             Route::controller(RiwayatController::class)->group(function () {
                 Route::post('/riwayat/getdata', 'getdata');
@@ -86,6 +86,8 @@ Route::middleware(['api_token'])->group(function () {
                 Route::post('/riwayat/awal/medis', 'awalMedis');
                 Route::post('/riwayat/awal/keperawatan', 'awalKeperawatan');
                 Route::post('/riwayat/diagnosa-icd10', 'diagnosaIcd10');
+                Route::post('/riwayat/tindakan/dokter/rajal', 'tindakanDokterRajal');
+                Route::post('/riwayat/detail-pemberian-obat', 'detailPemberianObat');
             });
         });
     });

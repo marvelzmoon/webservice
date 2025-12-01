@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Erm\DataKlinis;
 use App\Helpers\AuthHelper;
 use App\Http\Controllers\Controller;
 use App\Models\BridgingSep;
+use App\Models\DetailPemberianObat;
 use App\Models\DiagnosaPasien;
 use App\Models\Dokter;
 use App\Models\IoAssessmentPoliAccess;
+use App\Models\RawatJalanDr;
 use App\Models\Pegawai;
 use App\Models\PemeriksaanRalan;
 use App\Models\PenilaianAwalKeperawatanIgd;
@@ -460,15 +462,25 @@ class RiwayatController extends Controller
 
     public function awalMedis(Request $request)
     {
-        // Validasi input
-        $validated = $request->validate([
+        $rules = [
             'norawat' => 'required|string',
-        ], [
+        ];
+
+        $messages = [
             'required' => ':attribute tidak boleh kosong',
             'string'   => ':attribute harus berupa string',
-        ]);
+        ];
 
-        $noRawat = $validated['norawat'];
+        $validator = Validator::make($request->all(), $rules, $messages);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'code'    => 201,
+                'message' => $validator->errors()->first()
+            ]);
+        }
+
+        $noRawat = $request->norawat;
 
         // Ambil data poli berdasarkan noRawat
         $poli = RegPeriksaModel::find($noRawat);
@@ -688,15 +700,25 @@ class RiwayatController extends Controller
 
     public function awalKeperawatan(Request $request)
     {
-        // Validasi input
-        $validated = $request->validate([
+        $rules = [
             'norawat' => 'required|string',
-        ], [
+        ];
+
+        $messages = [
             'required' => ':attribute tidak boleh kosong',
             'string'   => ':attribute harus berupa string',
-        ]);
+        ];
 
-        $noRawat = $validated['norawat'];
+        $validator = Validator::make($request->all(), $rules, $messages);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'code'    => 201,
+                'message' => $validator->errors()->first()
+            ]);
+        }
+
+        $noRawat = $request->norawat;
 
         // Ambil data poli berdasarkan noRawat
         $poli = RegPeriksaModel::find($noRawat);
@@ -835,15 +857,25 @@ class RiwayatController extends Controller
 
     public function diagnosaIcd10(Request $request)
     {
-        // Validasi input
-        $validated = $request->validate([
+        $rules = [
             'norawat' => 'required|string',
-        ], [
+        ];
+
+        $messages = [
             'required' => ':attribute tidak boleh kosong',
             'string'   => ':attribute harus berupa string',
-        ]);
+        ];
 
-        $noRawat = $validated['norawat'];
+        $validator = Validator::make($request->all(), $rules, $messages);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'code'    => 201,
+                'message' => $validator->errors()->first()
+            ]);
+        }
+
+        $noRawat = $request->norawat;
 
         $cari = DiagnosaPasien::where('no_rawat', $noRawat)->orderBy('prioritas', 'asc')->get();
 
@@ -873,6 +905,140 @@ class RiwayatController extends Controller
             ];
         }
 
-        return $data;
+        return response()->json([
+            'code' => 200,
+            'message' => 'Ok',
+            'data' => $data,
+            'token' => AuthHelper::genToken(),
+        ]);
+    }
+
+    public function tindakanDokterRajal(Request $request)
+    {
+        $rules = [
+            'norawat' => 'required|string',
+        ];
+
+        $messages = [
+            'required' => ':attribute tidak boleh kosong',
+            'string'   => ':attribute harus berupa string',
+        ];
+
+        $validator = Validator::make($request->all(), $rules, $messages);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'code'    => 201,
+                'message' => $validator->errors()->first()
+            ]);
+        }
+
+        $noRawat = $request->norawat;
+
+        $cari = RawatJalanDr::where('no_rawat', $noRawat)->get();
+
+        if ($cari->isEmpty()) {
+            return response()->json([
+                'code'    => 204,
+                'message' => 'Data tidak ditemukan',
+            ]);
+        }
+
+        $data = [];
+        $dokterCache = [];
+        $jnsprwCache = [];
+
+        foreach ($cari as $v) {
+            if (!isset($dokterCache[$v->kd_dokter])) {
+                $dokterCache[$v->kd_dokter] =
+                    $v->dokter ? $v->dokter->only(['kd_dokter', 'nm_dokter']) : null;
+            }
+
+            if (!isset($jnsprwCache[$v->kd_jenis_prw])) {
+                $jnsprwCache[$v->kd_jenis_prw] =
+                    $v->jnsprw ? $v->jnsprw->only(['kd_jenis_prw', 'nm_perawatan']) : null;
+            }
+
+            $data[] = [
+                'no_rawat' => $v->no_rawat,
+                'tindakan' => $jnsprwCache[$v->kd_jenis_prw],
+                'dokter' => $dokterCache[$v->kd_dokter],
+                'tgl_perawatan' => $v->tgl_perawatan,
+                'jam_rawat' => $v->jam_rawat,
+                'biaya_rawat' => $v->biaya_rawat
+            ];
+        }
+
+        return response()->json([
+            'code' => 200,
+            'message' => 'Ok',
+            'data' => $data,
+            'token' => AuthHelper::genToken(),
+        ]);
+    }
+
+    public function detailPemberianObat(Request $request)
+    {
+        $rules = [
+            'norawat' => 'required|string',
+        ];
+
+        $messages = [
+            'required' => ':attribute tidak boleh kosong',
+            'string'   => ':attribute harus berupa string',
+        ];
+
+        $validator = Validator::make($request->all(), $rules, $messages);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'code'    => 201,
+                'message' => $validator->errors()->first()
+            ]);
+        }
+
+        $noRawat = $request->norawat;
+
+        $cari = DetailPemberianObat::where('no_rawat', $noRawat)->get();
+
+        if ($cari->isEmpty()) {
+            return null;
+        }
+
+        $data = [];
+        $cacheBangsal = [];
+        $cacheDatabarang = [];
+
+        foreach ($cari as $v) {
+            if (!isset($cacheDatabarang[$v->kode_brng])) {
+                $cacheDatabarang[$v->kode_brng] =
+                    $v->databarang ? $v->databarang->only(['kode_brng', 'nama_brng', 'kode_sat']) : null;
+            }
+
+            if (!isset($cacheBangsal[$v->kd_bangsal])) {
+                $cacheBangsal[$v->kd_bangsal] =
+                    $v->bangsal ? $v->bangsal->only(['kd_bangsal', 'nm_bangsal']) : null;
+            }
+
+            $data[] = [
+                'tgl_perawatan' => $v->tgl_perawatan,
+                'jam' => $v->jam,
+                'no_rawat' => $v->no_rawat,
+                'barang' => $cacheDatabarang[$v->kode_brng],
+                'jml' => $v->jml,
+                'total' => $v->total,
+                'status' => $v->status,
+                'bangsal' => $cacheBangsal[$v->kd_bangsal],
+                'no_batch' => $v->no_batch,
+            ];
+        }
+
+        return response()->json([
+            'code' => 200,
+            'message' => 'Ok',
+            'count' => $cari->count(),
+            'data' => $data,
+            'token' => AuthHelper::genToken(),
+        ]);
     }
 }
