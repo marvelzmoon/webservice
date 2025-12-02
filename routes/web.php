@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Erm\DataKlinis\RiwayatController;
+use App\Http\Controllers\IntegratedService\ISServiceController;
 use App\Http\Controllers\Jkn\JknApiAntrolController;
 use App\Http\Controllers\Jkn\JknSuratkontrolController;
 use App\Http\Controllers\Jkn\JknTaskidController;
@@ -76,6 +77,11 @@ Route::middleware(['api_token'])->group(function () {
         Route::post('/erm/data-klinis/riwayat/diagnosa-icd10', 'diagnosaIcd10');
         Route::post('/erm/data-klinis/riwayat/tindakan/dokter/rajal', 'tindakanDokterRajal');
         Route::post('/erm/data-klinis/riwayat/detail-pemberian-obat', 'detailPemberianObat');
+    });
+
+    Route::controller(ISServiceController::class)->group(function () {
+        Route::get('is/service', 'index');
+        Route::post('is/service/poli/post-antrian', 'poliAntrianPost');
     });
 
     Route::get('/master/poliklinik', action: [PoliklinikController::class, 'index']);
