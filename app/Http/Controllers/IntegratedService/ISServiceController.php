@@ -79,13 +79,14 @@ class ISServiceController extends Controller
         return $data;
     }
 
-    public function jadwalPoli() {
+    public function jadwalPoli()
+    {
         $hari = BPer::tebakHari(date('Y-m-d'));
 
         $caridata = Jadwal::where('hari_kerja', $hari)->get();
 
         $data = [];
-        $dokterCache=[];
+        $dokterCache = [];
         $poliCache = [];
 
         foreach ($caridata as $v) {
@@ -104,20 +105,21 @@ class ISServiceController extends Controller
                 'dokter' => $dokterCache[$v->kd_dokter],
                 'poli' => $poliCache[$v->kd_poli],
                 'tanggal' => date('Y-m-d'),
-                'jam' => '(' . $v->jam_mulai .'-' . $v->jam_selesai . ')'
+                'jam' => '(' . $v->jam_mulai . '-' . $v->jam_selesai . ')'
             ];
         }
 
         return response()->json([
-            'code'=> 200,
-            'message'=> 'ok',
-            'counter'=>$caridata->count(),
-            'data'=> $data,
+            'code' => 200,
+            'message' => 'ok',
+            'counter' => $caridata->count(),
+            'data' => $data,
             'token' => AuthHelper::genToken(),
         ]);
     }
 
-    public function antrianPeriksa(Request $request) {
+    public function antrianPeriksa(Request $request)
+    {
         $rules = [
             'dokter' => 'required|string',
             'poli'   => 'required|string',
@@ -142,7 +144,13 @@ class ISServiceController extends Controller
         $dokter = $request->dokter;
         $poli = $request->poli;
 
-        $cari = RegPeriksaModel::where('tgl_registrasi',$tgl)->where('kd_dokter', $dokter)->where('kd_poli', $poli)->get();
+        $cari = RegPeriksaModel::where('tgl_registrasi', $tgl)
+            ->where('kd_dokter', $dokter)
+            ->where('kd_poli', $poli)
+            ->join('io_antrian', 'io_antrian.no_referensi', '=', 'reg_periksa.no_rawat')
+            ->where('status_panggil', '0')
+            // ->where('status_antrian', '0')
+            ->get();
 
         if ($cari->isEmpty()) {
             return response()->json([
@@ -151,6 +159,23 @@ class ISServiceController extends Controller
             ]);
         }
 
-        
+        $data = [
+            ' '
+        ];
+
+        // $data = [];
+
+        // foreach ($cari as $v) {
+        //     $data[] = [
+        //         ''
+        //     ];
+        // }
+
+        // return response()->json([
+        //     'code' => 200,
+        //     'message' => 'Ok',
+        //     'data' => $data,
+        //     'token' => AuthHelper::genToken(),
+        // ]);
     }
 }
