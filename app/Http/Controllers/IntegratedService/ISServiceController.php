@@ -88,17 +88,26 @@ class ISServiceController extends Controller
             ->join('pasien', 'pasien.no_rkm_medis', '=', 'reg_periksa.no_rkm_medis')
             ->where('kd_dokter', $dokter)
             ->where('kd_poli', $poli)
-            ->select('reg_periksa.no_rawat',
-                'no_antrian', 'pasien.no_rkm_medis',
-                'pasien.nm_pasien', 'status_panggil', 'status_antrian',
-                'status_pasien', 'order', 'kd_poli', 'no_reg')
+            ->select(
+                'reg_periksa.no_rawat',
+                'no_antrian',
+                'pasien.no_rkm_medis',
+                'pasien.nm_pasien',
+                'status_panggil',
+                'status_antrian',
+                'status_pasien',
+                'order',
+                'kd_poli',
+                'no_reg'
+            )
+            ->orderBy('order', 'asc')
             ->get();
 
         $callFirst = $cari->where('status_pasien', '!=', 2)->first();
         $callProses = $cari->where('status_pasien', '!=', 2)->where('status_panggil', 1)->first();
 
         // return $callFirst;
-        
+
         if ($callProses) {
             $exp = explode('-', $callProses->no_antrian);
 
@@ -127,7 +136,7 @@ class ISServiceController extends Controller
 
         foreach ($viewData as $v) {
             $dataView = IoAntrian::where('no_referensi', $v->no_rawat)->first();
-            
+
             $data[] = [
                 'nobooking' => $v->nobooking,
                 'no_referensi' => $v->no_rawat,
@@ -149,7 +158,8 @@ class ISServiceController extends Controller
         ]);
     }
 
-    public function antrianSkip(Request $request) {
+    public function antrianSkip(Request $request)
+    {
         $rules = [
             'noreferensi'   => 'required|string',
             'noantrian'     => 'required|string',
@@ -182,19 +192,19 @@ class ISServiceController extends Controller
         $exp = explode('-', $request->noantrian);
 
         $cari = IoAntrian::where('no_referensi', 'like', $noref . '%')
-                ->where('no_antrian', 'like', $exp[0] . '-%')
-                ->get();
+            ->where('no_antrian', 'like', $exp[0] . '-%')
+            ->get();
 
         $nowOrder = $cari->where('no_referensi', $ref)->first();
         $lastOrder = $cari->last();
         $skiped = $lastOrder->order + $request->skip;
 
-        // IoAntrian::where('no_referensi', $ref)->update([''])
+        IoAntrian::where('no_referensi', $ref)->update(['order' => $skiped]);
 
         return response()->json([
-            'code'=> 200,
+            'code' => 200,
             'message' => 'Antrian berhasil di lewati!',
-            'token'=>AuthHelper::genToken()
+            'token' => AuthHelper::genToken()
         ]);
     }
 }
