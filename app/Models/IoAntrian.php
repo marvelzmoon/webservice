@@ -17,6 +17,7 @@ class IoAntrian extends Model
         'status_panggil',
         'status_antrian',
         'calltime',
-        'status_pasien'
+        'status_pasien',
+        'order'
     ];
 }

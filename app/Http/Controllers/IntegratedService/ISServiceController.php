@@ -12,74 +12,10 @@ use App\Models\ReferensiMobilejknBpjs;
 use App\Models\RegPeriksaModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 class ISServiceController extends Controller
 {
-    public function index()
-    {
-        return 1;
-    }
-
-    public function poliAntrianPost(Request $request)
-    {
-        $rules = [
-            'norawat' => 'required|string',
-        ];
-
-        $messages = [
-            'required' => ':attribute tidak boleh kosong',
-            'string'   => ':attribute harus berupa string',
-        ];
-
-        $validator = Validator::make($request->all(), $rules, $messages);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'code'    => 201,
-                'message' => $validator->errors()->first()
-            ]);
-        }
-
-        $noRawat = $request->norawat;
-        $cari = RegPeriksaModel::where('no_rawat', $noRawat)->first();
-
-        if (!$cari) {
-            return response()->json([
-                'code' => 204,
-                'message' => 'Data registrasi tidak ditemukan'
-            ]);
-        }
-
-        $nobooking = ReferensiMobilejknBpjs::where('no_rawat', $noRawat)->first();
-
-        if (!$nobooking) {
-            return response()->json([
-                'code' => 204,
-                'message' => 'Belum didaftarkan antrian'
-            ]);
-        }
-
-        $cek = IoAntrian::find($noRawat);
-
-        if ($cek) {
-            return response()->json([
-                'code' => 204,
-                'message' => 'Antrian sudah ada'
-            ]);
-        }
-
-        $data = [
-            'no_referensi' => $noRawat,
-            'no_antrian' => $nobooking->nomorantrean,
-            'status_panggil' => 0,
-            'status_antrian' => 0,
-            'calltime' => null,
-            'status_pasien' => 0
-        ];
-
-        return $data;
-    }
-
     public function jadwalPoli()
     {
         $hari = BPer::tebakHari(date('Y-m-d'));
@@ -147,66 +83,58 @@ class ISServiceController extends Controller
         $poli = $request->poli;
 
         $cari = RegPeriksaModel::where('tgl_registrasi', $tgl)
+            ->join('referensi_mobilejkn_bpjs', 'referensi_mobilejkn_bpjs.no_rawat', '=', 'reg_periksa.no_rawat')
+            ->join('io_antrian', 'io_antrian.no_referensi', '=', 'reg_periksa.no_rawat')
+            ->join('pasien', 'pasien.no_rkm_medis', '=', 'reg_periksa.no_rkm_medis')
             ->where('kd_dokter', $dokter)
             ->where('kd_poli', $poli)
+            ->select('reg_periksa.no_rawat',
+                'no_antrian', 'pasien.no_rkm_medis',
+                'pasien.nm_pasien', 'status_panggil', 'status_antrian',
+                'status_pasien', 'order', 'kd_poli', 'no_reg')
             ->get();
 
-        if ($cari->isEmpty()) {
-            return response()->json([
-                'code' => 204,
-                'message' => 'Tidak ada antrian pemeriksaan'
-            ]);
-        }
+        $callFirst = $cari->where('status_pasien', '!=', 2)->first();
+        $callProses = $cari->where('status_pasien', '!=', 2)->where('status_panggil', 1)->first();
 
-        $dataAntrian = IoAntrian::where('no_referensi', 'LIKE', $prefixTgl . '%')
-            ->where('no_antrian', 'LIKE', $poli . '-%')
-            ->get();
+        // return $callFirst;
+        
+        if ($callProses) {
+            $exp = explode('-', $callProses->no_antrian);
 
-        $antrianPanggil = IoAntrian::where('no_referensi', 'LIKE', $prefixTgl . '%')
-            ->where('no_antrian', 'LIKE', $poli . '-%')
-            ->where('status_pasien', '1')  // sedang dipanggil
-            ->orderBy('no_antrian', 'ASC')
-            ->first();
-
-        $lastCall = IoAntrian::where('no_referensi', 'LIKE', $prefixTgl . '%')
-            ->where('no_antrian', 'LIKE', $poli . '-%')
-            ->orderBy('calltime', 'DESC')
-            ->value('no_antrian');
-
-        if ($lastCall) {
-            $exp = explode('-', $lastCall);
-
-            // $nextCall = $cari[0]->kd_poli . '-' . ($exp[1] < $cari->count()) ? sprintf('%03d', $exp[1] + 1) : null;
             if ($exp[1] < $cari->count()) {
-                $nextCall = $cari[0]->kd_poli . '-' . sprintf('%03d', $exp[1] + 1);
+                $nextCall = $callProses->kd_poli . '-' . sprintf('%03d', $exp[1] + 1);
             } else {
                 $nextCall = null;
             }
         } else {
-            $nextCall = $cari[0]->kd_poli . '-' . $cari[0]->no_reg;
+            if (!$callFirst) {
+                $nextCall = null;
+            } else {
+                $nextCall = $callFirst->kd_poli . '-' . $callFirst->no_reg;
+            }
         }
 
-        return $nextCall;
+        $viewData = $cari->where('status_panggil', 0);
 
         $data = [];
-        $counter = [
+        $head = [
             'total' => $cari->count(),
-            'sisa' => ($cari->count()) - ($dataAntrian->count()),
-            'antrian_panggil' => $antrianPanggil ? $antrianPanggil->no_antrian : null,
-            'antrian_lanjut' => $nextCall,
+            'sisa' => $cari->count() -  $cari->where('status_pasien', 2)->count(),
+            'call' => (isset($callProses)) ? $callProses->kd_poli . '-' . $callProses->no_reg : null,
+            'nextCall' => $nextCall,
         ];
 
-        foreach ($cari as $v) {
-            // $cariRef = ReferensiMobilejknBpjs::where('no_rawat', $v->no_rawat)->where('status', '!=', 'Batal')->first();
-            // $noref = ($cariRef) ? $cariRef->nobooking : $v->no_referensi;
-            // $noref = $v->no_referensi;
-            // $cekAktif = IoAntrian::where('no_referensi', $noref)->first();
-
+        foreach ($viewData as $v) {
+            $dataView = IoAntrian::where('no_referensi', $v->no_rawat)->first();
+            
             $data[] = [
+                'nobooking' => $v->nobooking,
                 'no_referensi' => $v->no_rawat,
-                'pasien' => Pasien::where('no_rkm_medis', $v->no_rkm_medis)->first(['no_rkm_medis', 'nm_pasien']),
-                'no_antrian' => $v->kd_poli . '-' . $v->no_reg,
-                // 'btn_panggil' => ($cekAktif->status_panggil == '1' || $cekAktif->status_antrian == '1' || $cekAktif->status_pasien == '2') ? false : true,
+                'no_antrian' => $v->no_antrian,
+                'no_rkm_medis' => $v->no_rkm_medis,
+                'nama' => $v->nm_pasien,
+                'button' => ($dataView->status_panggil == 1 || $dataView->status_antrian == 1 || $dataView->status_pasien == 2) ? false : true,
             ];
         }
 
@@ -214,10 +142,59 @@ class ISServiceController extends Controller
             'code' => 200,
             'message' => 'Ok',
             'data' => [
-                'counter' => $counter,
-                'list' => $data,
+                'head' => $head,
+                'list' => $data
             ],
-            'token' => AuthHelper::genToken(),
+            'token' => AuthHelper::genToken()
+        ]);
+    }
+
+    public function antrianSkip(Request $request) {
+        $rules = [
+            'noreferensi'   => 'required|string',
+            'noantrian'     => 'required|string',
+            'skip'          => 'required|int'
+        ];
+
+        $messages = [
+            'required'  => ':attribute tidak boleh kosong',
+            'string'    => ':attribute harus berupa string',
+            'int'       => ':attribute harus berupa integer',
+        ];
+
+        $validator = Validator::make($request->all(), $rules, $messages);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'code'    => 201,
+                'message' => $validator->errors()->first()
+            ]);
+        }
+
+        $ref = $request->noreferensi;
+
+        if (str_contains($ref, '/')) {
+            $noref = Str::beforeLast($ref, '/');
+        } else {
+            $noref = substr($ref, 0, 8);
+        }
+
+        $exp = explode('-', $request->noantrian);
+
+        $cari = IoAntrian::where('no_referensi', 'like', $noref . '%')
+                ->where('no_antrian', 'like', $exp[0] . '-%')
+                ->get();
+
+        $nowOrder = $cari->where('no_referensi', $ref)->first();
+        $lastOrder = $cari->last();
+        $skiped = $lastOrder->order + $request->skip;
+
+        // IoAntrian::where('no_referensi', $ref)->update([''])
+
+        return response()->json([
+            'code'=> 200,
+            'message' => 'Antrian berhasil di lewati!',
+            'token'=>AuthHelper::genToken()
         ]);
     }
 }
