@@ -299,23 +299,58 @@ class ISServiceController extends Controller
     public function antrianMonitorView() {}
 
     public function antrianMonitorPanggil() {
-        $cari = IoAntrianPanggil::join('io_antrian', 'io_antrian.no_referensi', '=', 'io_antrian_panggil.no_referensi')->first();
-
-        if (!$cari) {
+        $find = IoAntrianPanggil::first();
+        if (!$find) {
             return response()->json([
-                'code' => 200,
+                'code' => 204,
                 'message' => 'Data kosong'
             ]);
         }
 
-        $data = [
-            ''
-        ];
+        $cari = IoAntrianPanggil::join('io_antrian', 'io_antrian.no_referensi', '=', 'io_antrian_panggil.no_referensi')
+                    ->join('reg_periksa','reg_periksa.no_rawat','=','io_antrian.no_referensi')
+                    ->join('dokter','dokter.kd_dokter','=','reg_periksa.kd_dokter')
+                    ->join('poliklinik','poliklinik.kd_poli','=','reg_periksa.kd_poli')
+                    ->first();
+
+        if (!$cari) {
+            return response()->json([
+                'code' => 204,
+                'message' => 'Referensi Data antrian tidak ditemukan!'
+            ]);
+        }
+
+        $data = [];
+        $data[] = 'antrian.wav';
+        
+        $antrian = explode('-', $cari->no_antrian);
+        $pecahHuruf = str_split($antrian[0]);
+
+        foreach ($pecahHuruf as $pc) {
+            $data[] = $pc .'.wav';
+        }
+
+        $pecahAngka = str_split((int)$antrian[1]);
+
+        foreach ($pecahAngka as $pc) {
+            $data[] = $pc .'.wav';
+        }
+
+        $data[] = 'menuju_poli.wav';
+
+        // IoAntrianPanggil::where('no_referensi', $cari->no_referensi)->delete();
 
         return response()->json([
             'code' => 200,
             'message' => 'Ok',
-            'data' => $data,
+            'data' => [
+                'popup' => [
+                    'noantri' => $cari->no_antrian,
+                    'dokter' => $cari->nm_dokter,
+                    'poli' => $cari->nm_poli,
+                ],
+                'list' => $data
+            ],
             'token' => AuthHelper::genToken()
         ]);
     }
