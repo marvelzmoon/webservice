@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\IntegratedService;
+namespace App\Http\Controllers\Rajal\Antrian;
 
 use App\Helpers\AuthHelper;
 use App\Helpers\BPer;
@@ -11,11 +11,13 @@ use App\Models\IoDashboardDetail;
 use App\Models\Jadwal;
 use App\Models\RegPeriksaModel;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
-class ISServiceController extends Controller
+class AntrianRJController extends Controller
 {
     public function jadwalPoli()
     {
@@ -287,7 +289,7 @@ class ISServiceController extends Controller
         $callPanggil->save();
 
         if ($callPanggil) {
-            IoAntrian::where('no_referensi', $ref)->update(['status_panggil' => 1]);
+            IoAntrian::where('no_referensi', $ref)->update(['status_panggil' => 1, 'calltime' => strtotime(date('Y-m-d H:i:s'))]);
         }
 
         return response()->json([
@@ -297,62 +299,131 @@ class ISServiceController extends Controller
         ]);
     }
 
-    public function antrianMonitorView() {}
+    public function antrianMasuk(Request $request)
+    {
+        $rules = [
+            'noreferensi'   => 'required|string',
+        ];
 
-    public function antrianMonitorPanggil() {
-        $find = IoAntrianPanggil::first();
+        $messages = [
+            'required'  => ':attribute tidak boleh kosong',
+            'string'    => ':attribute harus berupa string',
+        ];
+
+        $validator = Validator::make($request->all(), $rules, $messages);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'code'    => 201,
+                'message' => $validator->errors()->first()
+            ]);
+        }
+
+        $noref = $request->noreferensi;
+
+        $find = IoAntrian::find($noref);
+
         if (!$find) {
             return response()->json([
                 'code' => 204,
-                'message' => 'Data kosong'
+                'message' => 'Data tidak ditemukan'
             ]);
         }
 
-        $cari = IoAntrianPanggil::join('io_antrian', 'io_antrian.no_referensi', '=', 'io_antrian_panggil.no_referensi')
-                    ->join('reg_periksa','reg_periksa.no_rawat','=','io_antrian.no_referensi')
-                    ->join('dokter','dokter.kd_dokter','=','reg_periksa.kd_dokter')
-                    ->join('poliklinik','poliklinik.kd_poli','=','reg_periksa.kd_poli')
-                    ->first();
+        $post = [
+            'kodebooking' => $noref,
+            'taskid' => '4',
+            'waktu' => date('Y-m-d H:i:s'),
+        ];
 
-        if (!$cari) {
+        //kirim taskid 4
+        $apiSend = new Request($post);
+
+        $apiResponse = App::call(
+            'App\Http\Controllers\Jkn\JknTaskidController@post',
+            ['request' => $apiSend]
+        );
+
+        if ($apiResponse instanceof JsonResponse) {
+            $decodeResponse = $apiResponse->getData(true);
+
+            if ($decodeResponse != 200) {
+                return $decodeResponse;
+            }
+
+            // update
+            IoAntrian::where('no_referensi', $noref)->update(['status_pasien' => 1]);
+            return response()->json([
+                'code' => 200,
+                'message' => 'Pasien masuk poli',
+                'token' => AuthHelper::genToken()
+            ]);
+        }
+
+        return response()->json($apiResponse);
+    }
+
+    public function antrianSelesai(Request $request)
+    {
+        $rules = [
+            'noreferensi'   => 'required|string',
+        ];
+
+        $messages = [
+            'required'  => ':attribute tidak boleh kosong',
+            'string'    => ':attribute harus berupa string',
+        ];
+
+        $validator = Validator::make($request->all(), $rules, $messages);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'code'    => 201,
+                'message' => $validator->errors()->first()
+            ]);
+        }
+
+        $noref = $request->noreferensi;
+
+        $find = IoAntrian::find($noref);
+
+        if (!$find) {
             return response()->json([
                 'code' => 204,
-                'message' => 'Referensi Data antrian tidak ditemukan!'
+                'message' => 'Data tidak ditemukan'
             ]);
         }
 
-        $data = [];
-        $data[] = 'antrian.wav';
-        
-        $antrian = explode('-', $cari->no_antrian);
-        $pecahHuruf = str_split($antrian[0]);
+        $post = [
+            'kodebooking' => $noref,
+            'taskid' => '5',
+            'waktu' => date('Y-m-d H:i:s'),
+        ];
 
-        foreach ($pecahHuruf as $pc) {
-            $data[] = $pc .'.wav';
+        //kirim taskid 4
+        $apiSend = new Request($post);
+
+        $apiResponse = App::call(
+            'App\Http\Controllers\Jkn\JknTaskidController@post',
+            ['request' => $apiSend]
+        );
+
+        if ($apiResponse instanceof JsonResponse) {
+            $decodeResponse = $apiResponse->getData(true);
+
+            if ($decodeResponse != 200) {
+                return $decodeResponse;
+            }
+
+            // update
+            IoAntrian::where('no_referensi', $noref)->update(['status_panggil' => 0, 'status_antrian' => 1, 'status_pasien' => 2]);
+            return response()->json([
+                'code' => 200,
+                'message' => 'Antrian selesai',
+                'token' => AuthHelper::genToken()
+            ]);
         }
 
-        $pecahAngka = str_split((int)$antrian[1]);
-
-        foreach ($pecahAngka as $pc) {
-            $data[] = $pc .'.wav';
-        }
-
-        $data[] = 'menuju_poli.wav';
-
-        // IoAntrianPanggil::where('no_referensi', $cari->no_referensi)->delete();
-
-        return response()->json([
-            'code' => 200,
-            'message' => 'Ok',
-            'data' => [
-                'popup' => [
-                    'noantri' => $cari->no_antrian,
-                    'dokter' => $cari->nm_dokter,
-                    'poli' => $cari->nm_poli,
-                ],
-                'list' => $data
-            ],
-            'token' => AuthHelper::genToken()
-        ]);
+        return response()->json($apiResponse);
     }
 }

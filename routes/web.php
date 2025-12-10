@@ -1,7 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\Erm\DataKlinis\RiwayatController;
+use App\Http\Controllers\Emr\DataKlinis\RiwayatController;
 use App\Http\Controllers\IntegratedService\ISServiceController;
 use App\Http\Controllers\Jkn\JknApiAntrolController;
 use App\Http\Controllers\Jkn\JknSuratkontrolController;
@@ -10,6 +10,8 @@ use App\Http\Controllers\Master\PasienController;
 use App\Http\Controllers\Master\DokterController;
 use App\Http\Controllers\Master\PoliklinikController;
 use App\Http\Controllers\Master\ReferensiController;
+use App\Http\Controllers\Rajal\Antrian\AntrianRJController;
+use App\Http\Controllers\Rajal\Antrian\DashboardRjController;
 use App\Http\Controllers\Registrasi\RegistrasiController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -68,23 +70,29 @@ Route::middleware(['api_token'])->group(function () {
     });
 
     Route::controller(RiwayatController::class)->group(function () {
-        Route::post('/erm/data-klinis/riwayat/getdata', 'getdata');
-        Route::post('/erm/data-klinis/riwayat/soap', 'soapie');
-        Route::post('/erm/data-klinis/riwayat/soap/multi', 'soapiemulti');
-        Route::post('/erm/data-klinis/riwayat/sepbpjs', 'datasep');
-        Route::post('/erm/data-klinis/riwayat/awal/medis', 'awalMedis');
-        Route::post('/erm/data-klinis/riwayat/awal/keperawatan', 'awalKeperawatan');
-        Route::post('/erm/data-klinis/riwayat/diagnosa-icd10', 'diagnosaIcd10');
-        Route::post('/erm/data-klinis/riwayat/tindakan/dokter/rajal', 'tindakanDokterRajal');
-        Route::post('/erm/data-klinis/riwayat/detail-pemberian-obat', 'detailPemberianObat');
+        Route::post('/emr/data-klinis/riwayat/getdata', 'getdata');
+        Route::post('/emr/data-klinis/riwayat/soap', 'soapie');
+        Route::post('/emr/data-klinis/riwayat/soap/multi', 'soapiemulti');
+        Route::post('/emr/data-klinis/riwayat/sepbpjs', 'datasep');
+        Route::post('/emr/data-klinis/riwayat/awal/medis', 'awalMedis');
+        Route::post('/emr/data-klinis/riwayat/awal/keperawatan', 'awalKeperawatan');
+        Route::post('/emr/data-klinis/riwayat/diagnosa-icd10', 'diagnosaIcd10');
+        Route::post('/emr/data-klinis/riwayat/tindakan/dokter/rajal', 'tindakanDokterRajal');
+        Route::post('/emr/data-klinis/riwayat/detail-pemberian-obat', 'detailPemberianObat');
     });
 
-    Route::controller(ISServiceController::class)->group(function () {
-        Route::get('is/service/jadwal/poli', 'jadwalPoli');
-        Route::post('is/service/antrian/periksa', 'antrianPeriksa');
-        Route::post('is/service/antrian/skip', 'antrianSkip');
-        Route::post('is/service/antrian/panggil', 'antrianPanggil');
-        Route::get('is/service/antrian/dashboard/panggil/{id}', 'antrianMonitorPanggil');
+    Route::controller(AntrianRJController::class)->group(function () {
+        Route::get('rajal/antrian/jadwal', 'jadwalPoli');
+        Route::post('rajal/antrian/periksa', 'antrianPeriksa');
+        Route::post('rajal/antrian/skip', 'antrianSkip');
+        Route::post('rajal/antrian/panggil', 'antrianPanggil');
+        Route::post('rajal/antrian/masuk', 'antrianMasuk');
+        Route::post('rajal/antrian/selesai', 'antrianSelesai');
+    });
+
+    Route::controller(DashboardRjController::class)->group(function () {
+        Route::get('/rajal/dashboard/view/{id}', 'view');
+        Route::get('/rajal/dashboard/panggil/{id}', 'panggil');
     });
 
     Route::get('/master/poliklinik', action: [PoliklinikController::class, 'index']);

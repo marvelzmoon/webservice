@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Erm\DataKlinis;
+namespace App\Http\Controllers\Emr\DataKlinis;
 
 use App\Helpers\AuthHelper;
 use App\Http\Controllers\Controller;
