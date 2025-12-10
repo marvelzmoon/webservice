@@ -7,7 +7,7 @@ use App\Helpers\BPer;
 use App\Http\Controllers\Controller;
 use App\Models\IoAntrian;
 use App\Models\IoAntrianPanggil;
-use App\Models\IoMappingDashboardDetail;
+use App\Models\IoDashboardDetail;
 use App\Models\Jadwal;
 use App\Models\RegPeriksaModel;
 use Carbon\Carbon;
@@ -139,9 +139,9 @@ class ISServiceController extends Controller
         ];
 
         $disableButton = IoAntrian::where('no_referensi', 'LIKE', $prefixTgl . '%')
-                                        ->where('no_antrian', 'LIKE', $poli . '-%')
-                                        ->where('status_panggil', 1)
-                                        ->count();
+            ->where('no_antrian', 'LIKE', $poli . '-%')
+            ->where('status_panggil', 1)
+            ->count();
 
         foreach ($viewData as $v) {
             $data[] = [
@@ -218,7 +218,8 @@ class ISServiceController extends Controller
         ]);
     }
 
-    public function antrianPanggil(Request $request){
+    public function antrianPanggil(Request $request)
+    {
         $rules = [
             'noreferensi'   => 'required|string',
             'noantrian'     => 'required|string',
@@ -247,12 +248,12 @@ class ISServiceController extends Controller
         } else {
             $noref = Carbon::createFromFormat('Ymd', substr($ref, 0, 8))->format('Y/m/d');
         }
-        
+
         $cari = RegPeriksaModel::join('io_antrian', 'io_antrian.no_referensi', '=', 'reg_periksa.no_rawat')
-                    ->where('no_referensi', 'like', $noref . '%')
-                    ->where('kd_poli', $exp[0])
-                    ->where('no_antrian', $antrian)
-                    ->first();
+            ->where('no_referensi', 'like', $noref . '%')
+            ->where('kd_poli', $exp[0])
+            ->where('no_antrian', $antrian)
+            ->first();
 
         if (!$cari) {
             return response()->json([
@@ -260,10 +261,10 @@ class ISServiceController extends Controller
                 'message' => 'Data Antrian tidak ditemukan'
             ]);
         }
-        
-        $dashboard = IoMappingDashboardDetail::where('dashd_unit', $cari->kd_poli)
-                        ->join('io_mapping_dashboard', 'io_mapping_dashboard.dash_id','=', 'io_mapping_dashboard_detail.dashd_parent')
-                        ->first();
+
+        $dashboard = IoDashboardDetail::where('ddash_poli', $cari->kd_poli)
+            ->join('io_dashboard', 'io_dashboard.dash_id', '=', 'io_dashboard_detail.ddash_parent')
+            ->first();
         $tempPanggil = IoAntrianPanggil::find($ref);
 
         if ($tempPanggil) {
@@ -274,14 +275,14 @@ class ISServiceController extends Controller
         }
 
         // set status panggilan menjadi 0 semua
-        IoAntrian::where('no_referensi', 'like', $noref .'%')
-                    ->where('no_antrian', 'like', $cari->kd_poli .'-%')
-                    ->update(['status_panggil' => 0]);     
-        
+        IoAntrian::where('no_referensi', 'like', $noref . '%')
+            ->where('no_antrian', 'like', $cari->kd_poli . '-%')
+            ->update(['status_panggil' => 0]);
+
         $callPanggil = new IoAntrianPanggil();
         $callPanggil->no_referensi = $ref;
         $callPanggil->dashboard_id = $dashboard->dash_id;
-        $callPanggil->type = $dashboard->dashd_type;
+        $callPanggil->type = $dashboard->dash_type;
         $callPanggil->counter = null;
         $callPanggil->save();
 

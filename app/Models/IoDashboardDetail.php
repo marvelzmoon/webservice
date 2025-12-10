@@ -4,16 +4,17 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class IoMappingDashboardDetail extends Model
+class IoDashboardDetail extends Model
 {
     public $timestamps = false;
-    protected $table = "io_mapping_dashboard_detail";
+    protected $table = "io_dashboard_detail";
     public $incrementing = true;
     protected $keyType = 'int';
-    protected $primaryKey = 'dashd_id';
+    protected $primaryKey = 'ddash_id';
     protected $fillable = [
-        'dashd_parent',
-        'dashd_unit',
+        'ddash_parent',
+        'ddash_poli',
+        'ddash_dokter',
         'dashd_status'
     ];
 }
