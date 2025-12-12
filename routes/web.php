@@ -6,10 +6,12 @@ use App\Http\Controllers\IntegratedService\ISServiceController;
 use App\Http\Controllers\Jkn\JknApiAntrolController;
 use App\Http\Controllers\Jkn\JknSuratkontrolController;
 use App\Http\Controllers\Jkn\JknTaskidController;
+use App\Http\Controllers\Master\DashboardController;
 use App\Http\Controllers\Master\PasienController;
 use App\Http\Controllers\Master\DokterController;
 use App\Http\Controllers\Master\PoliklinikController;
 use App\Http\Controllers\Master\ReferensiController;
+use App\Http\Controllers\Monev\MonevController;
 use App\Http\Controllers\Rajal\Antrian\AntrianRJController;
 use App\Http\Controllers\Rajal\Antrian\DashboardRjController;
 use App\Http\Controllers\Registrasi\RegistrasiController;
@@ -29,6 +31,33 @@ Route::middleware(['api_token'])->group(function () {
     Route::controller(UserController::class)->group(function () {
         Route::get('/user', 'index');
     });
+
+    // START MASTER
+    Route::controller(PasienController::class)->group(function () {
+        Route::get('/pasien/getdata', 'getdata');
+        Route::post('/pasien/search', 'searchPasien');
+        Route::post('/pasien/create', 'createPasien');
+        Route::post('/pasien/destroy', 'destroy');
+    });
+
+    Route::controller(DashboardController::class)->group(function () {
+        Route::get('/dashboard/getdata', 'getdata');
+        Route::post('/dashboard/postdata', 'postdata');
+        Route::post('/dashboard/updatedata', 'updatedata');
+        Route::post('/dashboard/hapusdata', 'hapusdata');
+        
+        Route::get('/dashboard/detaildata', 'getdetail');
+        Route::post('/dashboard/detailpost', 'postdetail');
+        Route::post('/dashboard/detailupdate', 'updatedetail');
+        Route::post('/dashboard/detailhapus', 'hapusdetail');
+
+        Route::get('/dashboard/datacontrol', 'datacontrol');
+        Route::post('/dashboard/updatecontrol', 'updatecontrol');
+
+        Route::get('/dashboard/reg/jenis-antrian', 'refJenisAntrian');
+        Route::get('/dashboard/reg/dashboard-parent', 'refParent');
+    });
+    // END MASTER
 
     Route::controller(JknSuratkontrolController::class)->group(function () {
         Route::post('/jkn/surkon/getdata', 'getdata');
@@ -60,13 +89,6 @@ Route::middleware(['api_token'])->group(function () {
         Route::get('/ref/propinsi', 'propinsi');
         Route::get('/ref/provinsi', 'provinsi');
         Route::post('/ref/ambil-wilayah', 'getWilayah');
-    });
-
-    Route::controller(PasienController::class)->group(function () {
-        Route::get('/pasien/getdata', 'getdata');
-        Route::post('/pasien/search', 'searchPasien');
-        Route::post('/pasien/create', 'createPasien');
-        Route::post('/pasien/destroy', 'destroy');
     });
 
     Route::controller(RiwayatController::class)->group(function () {
@@ -116,4 +138,12 @@ Route::controller(JknApiAntrolController::class)->group(function () {
     Route::post('/api-antrol/daftar/antrian', 'daftarAntrian');
     Route::post('/api-antrol/daftar/antrian/farmasi', 'daftarAntrianFarmasi');
     Route::post('/api-antrol/batal/antrian', 'batalAntrean');
+});
+
+Route::controller(MonevController::class)->group(function () {
+    Route::get('monev', 'index')->name('monev');
+
+    Route::get('monev/antrian-terdaftar', 'antrolTerdaftar')->name('monev.antrolterdaftar');
+    Route::post('monev/antrian-terdaftar/api', 'antrolTerdaftarApi')->name('monev.antrolterdaftar.api');
+    Route::post('monev/antrian-terdaftar/batal', 'antrolTerdaftarBatal')->name('monev.antrolterdaftar.batal');
 });

@@ -4,16 +4,16 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class IoDashboard extends Model
+class IoJenisAntrian extends Model
 {
     public $timestamps = false;
-    protected $table = "io_dashboard";
+    protected $table = "io_jenis_antrian";
     public $incrementing = true;
     protected $keyType = 'int';
-    protected $primaryKey = 'dash_id';
+    protected $primaryKey = 'id';
     protected $fillable = [
-        'dash_name',
-        'dash_type',
-        'dash_status'
+        'id',
+        'jenis_antrian',
+        'prefix'
     ];
 }

@@ -1136,10 +1136,13 @@ class JknApiAntrolController extends Controller
         if ($decode['metadata']['code'] == 200) {
             return response()->json([
                 'code' => 200,
-                'message' => 'Antrian berhasil dibatalkan'
+                'message' => 'Antrian '.$data['kodebooking'].' berhasil dibatalkan'
             ]);
         }
 
-        return response()->json($decode);
+        return response()->json([
+            'code' => $decode['metadata']['code'],
+            'message' => $decode['metadata']['message']
+        ]);
     }
 }

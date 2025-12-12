@@ -27,12 +27,15 @@ class DashboardRjController extends Controller
         $child = IoDashboardDetail::join('io_dashboard_active', 'io_dashboard_active.dashac_idddash', '=', 'io_dashboard_detail.ddash_id')
             ->where('ddash_parent', $findDashboard->dash_id)
             ->where('dashac_status', '1')
+            ->where('dashac_tgl', $tgl)
             ->join('jadwal', 'jadwal.kd_dokter', '=', 'io_dashboard_detail.ddash_dokter')
             ->join('dokter', 'dokter.kd_dokter', '=', 'jadwal.kd_dokter')
             ->join('poliklinik', 'poliklinik.kd_poli', '=', 'jadwal.kd_poli')
             ->where('hari_kerja', $hari)
             ->orderBy('jam_mulai', 'asc')
             ->get();
+
+        // return $child;
 
         if ($child->isEmpty()) {
             return response()->json([

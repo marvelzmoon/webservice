@@ -15,6 +15,21 @@ class IoDashboardDetail extends Model
         'ddash_parent',
         'ddash_poli',
         'ddash_dokter',
-        'dashd_status'
+        'ddash_status'
     ];
+
+    public function parent()
+    {
+        return $this->belongsTo(IoDashboard::class, 'ddash_parent', 'dash_id');
+    }
+    
+    public function dokter()
+    {
+        return $this->belongsTo(Dokter::class, 'ddash_dokter', 'kd_dokter');
+    }
+
+    public function poli()
+    {
+        return $this->belongsTo(Poliklinik::class, 'ddash_poli', 'kd_poli');
+    }
 }
