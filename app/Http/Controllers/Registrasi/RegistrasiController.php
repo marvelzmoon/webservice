@@ -134,19 +134,7 @@ class RegistrasiController extends Controller
             $regPeriksa->sttsumur = $expCpasienumur[1];
             $regPeriksa->status_bayar = 'Belum Bayar';
             $regPeriksa->status_poli = (RegPeriksaModel::where('no_rkm_medis', $normedis)->where('kd_poli', $kdpoli)->where('kd_dokter', $kddokter)->count() < 1) ? 'Baru' : 'Lama';
-            // $regPeriksa->save();
-
-            // $postAntrian = [
-            //     'no_referensi' => $regPeriksa->no_rawat,
-            //     'no_antrian' => $regPeriksa->kd_poli . '-' . $regPeriksa->no_reg,
-            //     'status_panggil' => 0,
-            //     'status_antrian' => 0,
-            //     'calltime' => null,
-            //     'status_pasien' => 0,
-            //     'order' => IoAntrian::where('no_referensi', 'like', date('Y/m/d', strtotime($tglperiksa)) . '%')
-            //                     ->where('no_antrian', 'like', $regPeriksa->kd_poli .'-%')
-            //                     ->count() + 1
-            // ];
+            $regPeriksa->save();
 
             $postAntrian = new IoAntrian();
             $postAntrian->no_referensi = $regPeriksa->no_rawat;
