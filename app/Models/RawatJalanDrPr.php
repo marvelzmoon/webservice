@@ -1,17 +1,17 @@
 <?php
 
-namespace App\Models\Khanza;
+namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
 class RawatJalanDrPr extends Model
 {
     public $timestamps = false;
-    protected $connection = "second_db";
+    // protected $connection = "second_db";
     protected $table = "rawat_jl_drpr";
     public $incrementing = false;
     protected $keyType = 'string';
-    protected $primaryKey = ['no_rawat','kd_jenis_prw','kd_dokter','nip','tgl_perawatan','jam_rawat'];
+    protected $primaryKey = ['no_rawat', 'kd_jenis_prw', 'kd_dokter', 'nip', 'tgl_perawatan', 'jam_rawat'];
     protected $fillable = [
         'no_rawat',
         'kd_jenis_prw',

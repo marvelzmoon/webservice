@@ -6,6 +6,7 @@ use App\Helpers\AuthHelper;
 use App\Http\Controllers\Controller;
 use App\Models\IoAntrianTaskid;
 use App\Models\ReferensiMobilejknBpjs;
+use App\Models\RegPeriksaModel;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -57,9 +58,54 @@ class JknTaskidController extends Controller
             ]);
         }
 
+        $input = $request->kodebooking;
+
+        // Hilangkan spasi kiri/kanan
+        $input = trim($input);
+
+        if (preg_match('/^\d{4}\/\d{2}\/\d{2}\/\d{6}$/', $input)) {
+            // --------------------------
+            // Format A: 2025/11/07/000003
+            // --------------------------
+
+            // $clean = str_replace('/', '', $input); // "20251107000003"
+
+            // // Tindakan jika terdeteksi format A
+            // $jenis = 'formatA';
+
+            $conditionA = RegPeriksaModel::where('reg_periksa.no_rawat', $input)
+                ->join('referensi_mobilejkn_bpjs', 'referensi_mobilejkn_bpjs.no_rawat', '=', 'reg_periksa.no_rawat')
+                ->first();
+
+            if ($conditionA) {
+                $nobo = $conditionA->nobooking;
+            } else {
+                $nobo = $input;
+            }
+        } elseif (preg_match('/^\d{14}$/', $input)) {
+            // --------------------------
+            // Format B: 20251107000003
+            // --------------------------
+            $conditionB = ReferensiMobilejknBpjs::where('nobooking', $input)->first();
+
+            if ($conditionB) {
+                $nobo = $conditionB->nobooking;
+            } else {
+                $nobo = $input;
+            }
+        } else {
+            // --------------------------
+            // Format tidak valid
+            // --------------------------
+            return response()->json([
+                'code' => 208,
+                'message' => 'Format kode booking tidak dikenali.'
+            ]);
+        }
+
         // Ambil/insert data dasar
         $task = IoAntrianTaskid::firstOrCreate([
-            'nobooking' => $request->kodebooking
+            'nobooking' => $nobo
         ]);
 
         /* ============================================================

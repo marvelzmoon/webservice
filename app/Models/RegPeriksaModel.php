@@ -33,4 +33,19 @@ class RegPeriksaModel extends Model
         'status_bayar',
         'status_poli'
     ];
+
+    public function dokter()
+    {
+        return $this->belongsTo(Dokter::class, 'kd_dokter', 'kd_dokter');
+    }
+
+    public function poli()
+    {
+        return $this->belongsTo(Poliklinik::class, 'kd_poli', 'kd_poli');
+    }
+
+    public function penjab()
+    {
+        return $this->belongsTo(Penjab::class, 'kd_pj', 'kd_pj');
+    }
 }

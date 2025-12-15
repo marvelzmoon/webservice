@@ -1,13 +1,12 @@
 <?php
 
-namespace App\Models\Khanza;
+namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
 class JnsPerawatanRadiologiModel extends Model
 {
     public $timestamps = false;
-    protected $connection = "second_db";
     protected $table = "jns_perawatan_radiologi";
     public $incrementing = false;
     protected $keyType = 'string';
