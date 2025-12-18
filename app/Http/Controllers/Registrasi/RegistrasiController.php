@@ -587,4 +587,89 @@ class RegistrasiController extends Controller
 
         return response()->json($apiResponse);
     }
+
+    public function checkin(Request $request) {
+        $rules = [
+            'norawat'   => 'required|string',
+        ];
+
+        $messages = [
+            'required'  => ':attribute tidak boleh kosong',
+            'string'    => ':attribute harus berupa string',
+        ];
+
+        $validator = Validator::make($request->all(), $rules, $messages);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'code'    => 201,
+                'message' => $validator->errors()->first()
+            ]);
+        }
+
+        $norawat = $request->norawat;
+        $noref = BPer::cekNoRef($norawat);
+
+        $post = [
+            'kodebooking' => $noref,
+            'taskid' => '3',
+            'waktu' => date('Y-m-d H:i:s'),
+        ];
+
+        $post2 = [
+            'kodebooking' => BPer::cekNoRef($post['kodebooking']),
+            'taskid' => $post['taskid'],
+            'waktu' => strtotime($post['waktu']) * 1000,
+        ];
+
+        //kirim taskid 3
+        $cekSendTaskid = IoAntrianTaskid::where('nobooking', $post2['kodebooking'])->whereNotNull('taskid_' . $post['taskid'] . '_send')->first();
+
+        if($cekSendTaskid) {
+            return response()->json([
+                'code' => 204,
+                'message' => 'Pasien sudah checkin (TASKID 3 sudah terkirim)'
+            ]);
+        }
+
+        $apiSend = new Request($post);
+        $apiResponse = App::call(
+            'App\Http\Controllers\Jkn\JknTaskidController@post',
+            ['request' => $apiSend]
+        );
+
+        if ($apiResponse instanceof JsonResponse) {
+            $decodeResponse = $apiResponse->getData(true);
+
+            if ($decodeResponse['code'] != 200) {
+                return $decodeResponse;
+            }
+
+            $sendTaskid = new Request($post2);
+            $apiBPJSSend = App::call(
+                'App\Http\Controllers\Jkn\JknApiAntrolController@updateWaktuAntrian',
+                ['request' => $sendTaskid]
+            );
+
+            if ($apiBPJSSend instanceof JsonResponse) {
+                $dResponse = $apiBPJSSend->getData(true);
+
+                if ($dResponse['metadata']['code'] == 200) {
+                    return response()->json([
+                        'code' => 200,
+                        'message' => 'Checkin berhasil',
+                        'token' => AuthHelper::genToken(),
+                    ]);
+                }
+
+                return response()->json([
+                    'code' => 200,
+                    'message' => 'Checkin berhasil, TASKID 3 belum terkirim',
+                    'token' => AuthHelper::genToken(),
+                ]);
+            }
+        }
+
+        return response()->json($apiResponse);
+    }
 }

@@ -7,6 +7,7 @@ use App\Helpers\BPer;
 use App\Http\Controllers\Controller;
 use App\Models\IoAntrian;
 use App\Models\IoAntrianPanggil;
+use App\Models\IoAntrianTaskid;
 use App\Models\IoDashboardDetail;
 use App\Models\Jadwal;
 use App\Models\RegPeriksaModel;
@@ -16,6 +17,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+
+use function Symfony\Component\String\s;
 
 class AntrianRJController extends Controller
 {
@@ -336,7 +339,22 @@ class AntrianRJController extends Controller
             'waktu' => date('Y-m-d H:i:s'),
         ];
 
+        $post2 = [
+            'kodebooking' => BPer::cekNoRef($post['kodebooking']),
+            'taskid' => $post['taskid'],
+            'waktu' => strtotime($post['waktu']) * 1000,
+        ];
+
         //kirim taskid 4
+        $cekSendTaskid = IoAntrianTaskid::where('nobooking', $post2['kodebooking'])->whereNotNull('taskid_' . $post['taskid'] . '_send')->first();
+
+        if($cekSendTaskid) {
+            return response()->json([
+                'code' => 204,
+                'message' => 'Pasien sudah masuk poli (TASKID 4 sudah terkirim)'
+            ]);
+        }
+
         $apiSend = new Request($post);
 
         $apiResponse = App::call(
@@ -347,15 +365,45 @@ class AntrianRJController extends Controller
         if ($apiResponse instanceof JsonResponse) {
             $decodeResponse = $apiResponse->getData(true);
 
-            if ($decodeResponse != 200) {
+            if ($decodeResponse['code'] != 200) {
                 return $decodeResponse;
             }
 
             // update
             IoAntrian::where('no_referensi', $noref)->update(['status_pasien' => 1]);
+
+            $cekTaskIDSend = IoAntrianTaskid::where('nobooking', $post2['kodebooking'])->whereNotNull('taskid_3_send')->first();
+
+            if ($cekTaskIDSend) {
+                $sendTaskid = new Request($post2);
+                $apiBPJSSend = App::call(
+                    'App\Http\Controllers\Jkn\JknApiAntrolController@updateWaktuAntrian',
+                    ['request' => $sendTaskid]
+                );
+
+                if ($apiBPJSSend instanceof JsonResponse) {
+                    $dResponse = $apiBPJSSend->getData(true);
+
+                    if ($dResponse['metadata']['code'] == 200) {
+                        return response()->json([
+                            'code' => 200,
+                            'message' => 'Pasien masuk poli',
+                            'token' => AuthHelper::genToken()
+                        ]);
+                    }
+
+                    // return response()->json($apiBPJSSend);
+                    return response()->json([
+                        'code' => 200,
+                        'message' => 'Pasien masuk poli, TASKID 4 gagal dikirim',
+                        'token' => AuthHelper::genToken()
+                    ]);
+                }
+            }
+            
             return response()->json([
                 'code' => 200,
-                'message' => 'Pasien masuk poli',
+                'message' => 'Pasien masuk poli, TASKID 3 belum dikirim',
                 'token' => AuthHelper::genToken()
             ]);
         }
@@ -395,7 +443,7 @@ class AntrianRJController extends Controller
         }
 
         $post = [
-            'kodebooking' => $noref,
+            'nobooking' => $noref,
             'taskid' => '5',
             'waktu' => date('Y-m-d H:i:s'),
         ];
@@ -414,14 +462,6 @@ class AntrianRJController extends Controller
             if ($decodeResponse != 200) {
                 return $decodeResponse;
             }
-
-            // update
-            IoAntrian::where('no_referensi', $noref)->update(['status_panggil' => 0, 'status_antrian' => 1, 'status_pasien' => 2]);
-            return response()->json([
-                'code' => 200,
-                'message' => 'Antrian selesai',
-                'token' => AuthHelper::genToken()
-            ]);
         }
 
         return response()->json($apiResponse);

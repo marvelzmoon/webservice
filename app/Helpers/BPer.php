@@ -2,6 +2,7 @@
 
 namespace App\Helpers;
 
+use App\Models\ReferensiMobilejknBpjs;
 use Carbon\Carbon;
 use DateTime;
 use Illuminate\Support\Str;
@@ -126,5 +127,16 @@ class BPer
         //     // --------------------------
         //     return back()->withErrors(['kode' => 'Format kode tidak dikenali.']);
         // }
+    }
+
+    public static function cekNoRef($noref)
+    {
+        $cek = ReferensiMobilejknBpjs::where('no_rawat', $noref)->first();
+
+        if ($cek) {
+            return $cek->nobooking;
+        }
+
+        return $noref;
     }
 }

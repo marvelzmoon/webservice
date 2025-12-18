@@ -16,6 +16,7 @@ use App\Http\Controllers\Monev\MonevController;
 use App\Http\Controllers\Rajal\Antrian\AntrianRJController;
 use App\Http\Controllers\Rajal\Antrian\DashboardRjController;
 use App\Http\Controllers\Registrasi\RegistrasiController;
+use App\Http\Controllers\Service\ServiceFarmasiController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -93,6 +94,7 @@ Route::middleware(['api_token'])->group(function () {
         Route::post('/registrasi/add-antrol', 'addantrian');
         Route::post('/registrasi/batal-periksa', 'batalPeriksa');
         Route::post('/registrasi/add-antrol-farmasi', 'addAntrianFarmasi');
+        Route::post('/registrasi/checkin', 'checkin');
     });
     // END REGISTRASI
 
@@ -138,6 +140,7 @@ Route::middleware(['api_token'])->group(function () {
     Route::post('/master/dokter', action: [DokterController::class, 'store']);
 });
 
+// START API ANTROL
 Route::controller(JknApiAntrolController::class)->group(function () {
     Route::get('/api-antrol/ref/poli', 'refPoli');
     Route::get('/api-antrol/ref/dokter', 'refDokter');
@@ -154,7 +157,15 @@ Route::controller(JknApiAntrolController::class)->group(function () {
     Route::post('/api-antrol/daftar/antrian/farmasi', 'daftarAntrianFarmasi');
     Route::post('/api-antrol/batal/antrian', 'batalAntrean');
 });
+// END API ANTROL
 
+// START SERVICE
+Route::controller(ServiceFarmasiController::class)->group(function () {
+    Route::get('/service/farmasi/antrian-tambah', 'antrianTambah');
+});
+// END SERVICE
+
+// BYPASS
 Route::controller(MonevController::class)->group(function () {
     Route::get('monev', 'index')->name('monev');
 

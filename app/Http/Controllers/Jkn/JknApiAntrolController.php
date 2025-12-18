@@ -486,6 +486,14 @@ class JknApiAntrolController extends Controller
             ]);
         }
 
+        $nobooking = $request->kodebooking;
+        
+        if (str_contains($nobooking, '/')) {
+            $nobooking_url = urlencode($nobooking);
+        }  else {
+            $nobooking_url = $nobooking;
+        }
+
         $sId = IoSetting::where('group', 'bpjs_kesehatan')->get();
 
         foreach ($sId as $row) {
@@ -500,7 +508,7 @@ class JknApiAntrolController extends Controller
         $curl = curl_init();
 
         curl_setopt_array($curl, array(
-            CURLOPT_URL => config('confsistem.url_antrol') . '/antrean/pendaftaran/kodebooking/' . $request->kodebooking,
+            CURLOPT_URL => config('confsistem.url_antrol') . '/antrean/pendaftaran/kodebooking/' . $nobooking_url,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_ENCODING => "",
             CURLOPT_MAXREDIRS => 10,
@@ -805,7 +813,7 @@ class JknApiAntrolController extends Controller
         }
 
         $messages = [
-            'required' => ':attribute tidak boleh kosong',
+            'required' => ':attribute tidak boleh kosongs',
         ];
 
         $validator = Validator::make($request->all(), $rules, $messages);
