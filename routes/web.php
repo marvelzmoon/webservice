@@ -3,7 +3,6 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Emr\DataKlinis\RiwayatController;
 use App\Http\Controllers\Farmasi\ResepController;
-use App\Http\Controllers\IntegratedService\ISServiceController;
 use App\Http\Controllers\Jkn\JknApiAntrolController;
 use App\Http\Controllers\Jkn\JknSuratkontrolController;
 use App\Http\Controllers\Jkn\JknTaskidController;

@@ -176,7 +176,7 @@ class AntrianRJController extends Controller
     public function antrianSkip(Request $request)
     {
         $rules = [
-            'noreferensi'   => 'required|string',
+            'norawat'       => 'required|string',
             'noantrian'     => 'required|string',
             'skip'          => 'required|int'
         ];
@@ -196,25 +196,20 @@ class AntrianRJController extends Controller
             ]);
         }
 
-        $ref = $request->noreferensi;
-
-        if (str_contains($ref, '/')) {
-            $noref = Str::beforeLast($ref, '/');
-        } else {
-            $noref = substr($ref, 0, 8);
-        }
+        $norawat = $request->norawat;
+        // $noref = BPer::cekNoRef($norawat);
 
         $exp = explode('-', $request->noantrian);
 
-        $cari = IoAntrian::where('no_referensi', 'like', $noref . '%')
+        $cari = IoAntrian::where('no_referensi', 'like', $norawat . '%')
             ->where('no_antrian', 'like', $exp[0] . '-%')
             ->get();
 
-        $nowOrder = $cari->where('no_referensi', $ref)->first();
+        // $nowOrder = $cari->where('no_referensi', $norawat)->first();
         $lastOrder = $cari->last();
         $skiped = $lastOrder->order + $request->skip;
 
-        IoAntrian::where('no_referensi', $ref)->update(['order' => $skiped]);
+        IoAntrian::where('no_referensi', $norawat)->update(['order' => $skiped]);
 
         return response()->json([
             'code' => 200,
@@ -226,7 +221,7 @@ class AntrianRJController extends Controller
     public function antrianPanggil(Request $request)
     {
         $rules = [
-            'noreferensi'   => 'required|string',
+            'norawat'   => 'required|string',
             'noantrian'     => 'required|string',
         ];
 
@@ -244,18 +239,13 @@ class AntrianRJController extends Controller
             ]);
         }
 
-        $ref = $request->noreferensi;
+        $norawat = $request->norawat;
+        $noref = BPer::cekNoRef($norawat);
         $antrian = $request->noantrian;
         $exp = explode('-', $antrian);
 
-        if (str_contains($ref, '/')) {
-            $noref = Str::beforeLast($ref, '/');
-        } else {
-            $noref = Carbon::createFromFormat('Ymd', substr($ref, 0, 8))->format('Y/m/d');
-        }
-
         $cari = RegPeriksaModel::join('io_antrian', 'io_antrian.no_referensi', '=', 'reg_periksa.no_rawat')
-            ->where('no_referensi', 'like', $noref . '%')
+            ->where('no_referensi', 'like', $norawat . '%')
             ->where('kd_poli', $exp[0])
             ->where('no_antrian', $antrian)
             ->first();
@@ -270,7 +260,7 @@ class AntrianRJController extends Controller
         $dashboard = IoDashboardDetail::where('ddash_poli', $cari->kd_poli)
             ->join('io_dashboard', 'io_dashboard.dash_id', '=', 'io_dashboard_detail.ddash_parent')
             ->first();
-        $tempPanggil = IoAntrianPanggil::find($ref);
+        $tempPanggil = IoAntrianPanggil::find($norawat);
 
         if ($tempPanggil) {
             return response()->json([
@@ -280,19 +270,19 @@ class AntrianRJController extends Controller
         }
 
         // set status panggilan menjadi 0 semua
-        IoAntrian::where('no_referensi', 'like', $noref . '%')
+        IoAntrian::where('no_referensi', 'like', $norawat . '%')
             ->where('no_antrian', 'like', $cari->kd_poli . '-%')
             ->update(['status_panggil' => 0]);
 
         $callPanggil = new IoAntrianPanggil();
-        $callPanggil->no_referensi = $ref;
+        $callPanggil->no_referensi = $norawat;
         $callPanggil->dashboard_id = $dashboard->dash_id;
         $callPanggil->type = $dashboard->dash_type;
         $callPanggil->counter = null;
         $callPanggil->save();
 
         if ($callPanggil) {
-            IoAntrian::where('no_referensi', $ref)->update(['status_panggil' => 1, 'calltime' => strtotime(date('Y-m-d H:i:s'))]);
+            IoAntrian::where('no_referensi', $norawat)->update(['status_panggil' => 1, 'calltime' => strtotime(date('Y-m-d H:i:s'))]);
         }
 
         return response()->json([
@@ -305,7 +295,7 @@ class AntrianRJController extends Controller
     public function antrianMasuk(Request $request)
     {
         $rules = [
-            'noreferensi'   => 'required|string',
+            'norawat'   => 'required|string',
         ];
 
         $messages = [
@@ -322,9 +312,10 @@ class AntrianRJController extends Controller
             ]);
         }
 
-        $noref = $request->noreferensi;
+        $norawat = $request->norawat;
+        $noref = BPer::cekNoRef($norawat);
 
-        $find = IoAntrian::find($noref);
+        $find = IoAntrian::find($norawat);
 
         if (!$find) {
             return response()->json([
@@ -340,7 +331,7 @@ class AntrianRJController extends Controller
         ];
 
         $post2 = [
-            'kodebooking' => BPer::cekNoRef($post['kodebooking']),
+            'kodebooking' => $noref,
             'taskid' => $post['taskid'],
             'waktu' => strtotime($post['waktu']) * 1000,
         ];
@@ -366,11 +357,18 @@ class AntrianRJController extends Controller
             $decodeResponse = $apiResponse->getData(true);
 
             if ($decodeResponse['code'] != 200) {
-                return $decodeResponse;
+                if ($decodeResponse['message'] == "TaskID 4 tidak dapat diproses sebelum TaskID 3 terisi.") {
+                    return response()->json([
+                        'code' => 204,
+                        'message' => 'Pasien belum checkin di Admisi',
+                    ]);
+                }
+
+                return response()->json($decodeResponse);
             }
 
             // update
-            IoAntrian::where('no_referensi', $noref)->update(['status_pasien' => 1]);
+            IoAntrian::where('no_referensi', $norawat)->update(['status_pasien' => 1]);
 
             $cekTaskIDSend = IoAntrianTaskid::where('nobooking', $post2['kodebooking'])->whereNotNull('taskid_3_send')->first();
 
@@ -396,6 +394,7 @@ class AntrianRJController extends Controller
                     return response()->json([
                         'code' => 200,
                         'message' => 'Pasien masuk poli, TASKID 4 gagal dikirim',
+                        'message_bpjs' => $dResponse,
                         'token' => AuthHelper::genToken()
                     ]);
                 }
@@ -414,7 +413,7 @@ class AntrianRJController extends Controller
     public function antrianSelesai(Request $request)
     {
         $rules = [
-            'noreferensi'   => 'required|string',
+            'norawat'   => 'required|string',
         ];
 
         $messages = [
@@ -431,9 +430,10 @@ class AntrianRJController extends Controller
             ]);
         }
 
-        $noref = $request->noreferensi;
+        $norawat = $request->norawat;
+        $noref = BPer::cekNoRef($norawat);
 
-        $find = IoAntrian::find($noref);
+        $find = IoAntrian::find($norawat);
 
         if (!$find) {
             return response()->json([
@@ -443,7 +443,7 @@ class AntrianRJController extends Controller
         }
 
         $post = [
-            'nobooking' => $noref,
+            'kodebooking' => $noref,
             'taskid' => '5',
             'waktu' => date('Y-m-d H:i:s'),
         ];
@@ -459,9 +459,22 @@ class AntrianRJController extends Controller
         if ($apiResponse instanceof JsonResponse) {
             $decodeResponse = $apiResponse->getData(true);
 
-            if ($decodeResponse != 200) {
-                return $decodeResponse;
+            if ($decodeResponse['code'] == 200) {
+                return response()->json([
+                    'code' => 200,
+                    'message' => 'Pasien selesai periksa',
+                    'token' => AuthHelper::genToken()
+                ]);
             }
+
+            if ($decodeResponse['message'] == "TaskID 5 tidak dapat diproses sebelum TaskID 4 terisi.") {
+                return response()->json([
+                    'code' => 204,
+                    'message' => 'Pasien belum masuk poli',
+                ]);
+            }
+            
+            return response()->json($decodeResponse);
         }
 
         return response()->json($apiResponse);
