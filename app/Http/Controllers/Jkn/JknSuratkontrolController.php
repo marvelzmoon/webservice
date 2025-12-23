@@ -28,17 +28,22 @@ class JknSuratkontrolController extends Controller
             ], 400);
         }
 
-        $carisurkon = BridgingSuratKontrolBpjs::where('tgl_rencana', $tanggal)
+        $carisurkon = BridgingSuratKontrolBpjs::
+            with(['sepAsal'])->
+            where('tgl_rencana', $tanggal)
             ->leftJoin('bridging_sep', 'bridging_surat_kontrol_bpjs.no_surat', '=', 'bridging_sep.noskdp')
-            ->select(
-                'bridging_sep.no_sep',
+            ->select([
+                // 'bridging_sep.no_sep',
+                'bridging_surat_kontrol_bpjs.no_sep',
                 'bridging_surat_kontrol_bpjs.no_surat',
+                'bridging_surat_kontrol_bpjs.tgl_surat',
                 'bridging_surat_kontrol_bpjs.tgl_rencana',
                 'bridging_surat_kontrol_bpjs.kd_dokter_bpjs',
                 'bridging_surat_kontrol_bpjs.nm_dokter_bpjs',
                 'bridging_surat_kontrol_bpjs.kd_poli_bpjs',
-                'bridging_surat_kontrol_bpjs.nm_poli_bpjs'
-            )
+                'bridging_surat_kontrol_bpjs.nm_poli_bpjs',
+                'bridging_sep.noskdp'
+            ])
             ->get();
 
         return response()->json([

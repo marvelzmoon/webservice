@@ -25,7 +25,7 @@ class RegistrasiController extends Controller
 {
     public function getdata(Request $request)
     {
-        $data = RegPeriksaModel::whereBetween('tgl_registrasi', [$request->tglawal, $request->tglakhir])->get();
+        $data = RegPeriksaModel::with(['pasien','doctor','policlinic','asuransi'])->whereBetween('tgl_registrasi', [date('Y-m-d',strtotime($request->tglawal)), date('Y-m-d',strtotime($request->tglakhir))])->get();
 
         return response()->json([
             'code' => 200,

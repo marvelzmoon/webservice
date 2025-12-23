@@ -15,10 +15,24 @@ class BridgingSuratKontrolBpjs extends Model
     protected $fillable = [
         'no_sep',
         'tgl_surat',
+        'no_surat',
         'tgl_rencana',
         'kd_dokter_bpjs',
         'nm_dokter_bpjs',
         'kd_poli_bpjs',
         'nm_poli_bpjs'
     ];
+    public function sepAsal()
+    {
+        return $this->hasOne('App\Models\BridgingSEP','no_sep','no_sep')
+        ->select([
+            'no_sep',
+            'noskdp',
+            'no_kartu',
+            'no_rawat',
+            'nama_pasien',
+            'nomr',
+            'nmdiagnosaawal'
+        ]);
+    }
 }

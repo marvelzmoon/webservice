@@ -33,4 +33,28 @@ class RegPeriksaModel extends Model
         'status_bayar',
         'status_poli'
     ];
+    public function pasien()
+    {
+        return $this->hasOne('App\Models\Pasien','no_rkm_medis','no_rkm_medis');
+    }
+    public function pasien_compact()
+    {
+        return $this->hasOne('App\Models\Pasien','no_rkm_medis','no_rkm_medis')->select(['no_rkm_medis','nm_pasien','jk','tgl_lahir','alamat','no_ktp'])->with(['patient_id']);
+    }
+    public function doctor()
+    {
+        return $this->hasOne('App\Models\Dokter','kd_dokter','kd_dokter')->with(['pegawai_compact']);
+    }
+    public function policlinic()
+    {
+        return $this->hasOne('App\Models\Poliklinik','kd_poli','kd_poli');
+    }
+    public function asuransi()
+    {
+        return $this->hasOne('App\Models\Penjab','kd_pj','kd_pj');
+    }
+    public function satusehatlokasi()
+    {
+        return $this->hasOne('App\Models\SatuSehatMappingLokasiRalan','kd_poli','kd_poli')->select(['kd_poli','id_organisasi_satusehat','id_lokasi_satusehat']);
+    }
 }

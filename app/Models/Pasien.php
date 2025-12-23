@@ -49,4 +49,13 @@ class Pasien extends Model
         'kd_prop',
         'propinsipj'
     ];
+    public function asuransi()
+    {
+        return $this->hasOne('App\Models\Penjab','kd_pj','kd_pj')->where('status','=','1');
+    }
+    public function patient_id()
+    {
+        return $this->hasOne('App\Models\IoStatuSehatPatient','no_ktp','no_ktp');
+    }
+
 }

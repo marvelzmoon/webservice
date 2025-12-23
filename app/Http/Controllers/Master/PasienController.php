@@ -40,46 +40,17 @@ class PasienController extends Controller
 
     public function searchPasien(Request $request)
     {
-        $norm = $request->norm;
-        $nama = $request->nama;
-        $dob = $request->dob;
-        $alamat = $request->alamat;
-
-        // search by norm
-        if ($request->norm != "") {
-            $search = Pasien::where('no_rkm_medis', 'like', '%' . $norm . '%')->get();
+        $keyword = $request->keyword;
+        if ($request->keyword == "") {
+            return response()->json(['code' => 201, 'message' => 'Tidak ada keyword'], 201);
         }
-
-        // search by nama
-        if ($request->nama != "") {
-            $search = Pasien::where('nm_pasien', 'like', '%' . $nama . '%')->limit(100)->get();
-        }
-
-        // search by nama and dob
-        if ($request->nama != "" && $request->dob != "") {
-            $search = Pasien::where('nm_pasien', 'like', '%' . $nama . '%')
-                ->where('tgl_lahir', $dob)
-                ->limit(100)
-                ->get();
-        }
-
-        // search by nama and alamat
-        if ($request->nama != '' && $request->alamat) {
-            $search = Pasien::where('nm_pasien', 'like', '%' . $nama . '%')
-                ->where('alamat', 'like', '%' . $alamat . '%')
-                ->limit(100)
-                ->get();
-        }
-
-        // search by nama, alamat and dob
-        if ($request->nama != '' && $request->alamat && $request->dob != '') {
-            $search = Pasien::where('nm_pasien', 'like', '%' . $nama . '%')
-                ->where('alamat', 'like', '%' . $alamat . '%')
-                ->where('tgl_lahir', $dob)
-                ->limit(100)
-                ->get();
-        }
-
+        $search = Pasien::
+        with('asuransi')->
+        where('no_rkm_medis', 'like', $keyword . '%')->
+        orWhere('no_ktp', 'like', $keyword . '%')->
+        orWhere('nm_pasien', 'like', '%'. $keyword . '%')->
+        orWhere('alamat', 'like', '%'.$keyword . '%')->
+        get();
         return response()->json([
             'code' => 200,
             'message' => ($search->isEmpty()) ? 'Data tidak ditemukan' : 'Success',

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Master;
 
+use App\Helpers\AuthHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Kabupaten;
 use App\Models\Kecamatan;
@@ -16,7 +17,13 @@ class ReferensiController extends Controller
     public function penjab()
     {
         $data = Penjab::all();
-        return response()->json($data);
+        return response()->json([
+            'code' => 200, 
+            'data' => $data,
+            'message' => 'Success',
+            // 'token' => AuthHelper::genToken(),
+        ]);
+        // return response()->json($data);
     }
 
     public function kelurahan(Request $request)
