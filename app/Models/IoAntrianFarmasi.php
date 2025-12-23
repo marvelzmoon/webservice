@@ -4,17 +4,21 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class IoAntrianPanggil extends Model
+class IoAntrianFarmasi extends Model
 {
     public $timestamps = false;
-    protected $table = "io_antrian_panggil";
+    protected $table = "io_antrian_farmasi";
     public $incrementing = false;
     protected $keyType = 'string';
     protected $primaryKey = 'no_referensi';
     protected $fillable = [
         'no_referensi',
-        'dashboard_id',
-        'type',
-        'counter'
+        'no_antrian',
+        'status_antrian',
+        'calltime',
+        'status_pasien',
+        'status_panggil',
+        'kategori_antrian',
+        'tgl'
     ];
 }

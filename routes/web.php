@@ -2,7 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Emr\DataKlinis\RiwayatController;
-use App\Http\Controllers\IntegratedService\ISServiceController;
+use App\Http\Controllers\Farmasi\ResepController;
 use App\Http\Controllers\Jkn\JknApiAntrolController;
 use App\Http\Controllers\Jkn\JknSuratkontrolController;
 use App\Http\Controllers\Jkn\JknTaskidController;
@@ -15,6 +15,7 @@ use App\Http\Controllers\Monev\MonevController;
 use App\Http\Controllers\Rajal\Antrian\AntrianRJController;
 use App\Http\Controllers\Rajal\Antrian\DashboardRjController;
 use App\Http\Controllers\Registrasi\RegistrasiController;
+use App\Http\Controllers\Service\ServiceFarmasiController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -45,7 +46,7 @@ Route::middleware(['api_token'])->group(function () {
         Route::post('/dashboard/postdata', 'postdata');
         Route::post('/dashboard/updatedata', 'updatedata');
         Route::post('/dashboard/hapusdata', 'hapusdata');
-        
+
         Route::get('/dashboard/detaildata', 'getdetail');
         Route::post('/dashboard/detailpost', 'postdetail');
         Route::post('/dashboard/detailupdate', 'updatedetail');
@@ -56,25 +57,6 @@ Route::middleware(['api_token'])->group(function () {
 
         Route::get('/dashboard/reg/jenis-antrian', 'refJenisAntrian');
         Route::get('/dashboard/reg/dashboard-parent', 'refParent');
-    });
-    // END MASTER
-
-    Route::controller(JknSuratkontrolController::class)->group(function () {
-        Route::post('/jkn/surkon/getdata', 'getdata');
-    });
-
-    Route::controller(JknTaskidController::class)->group(function () {
-        Route::post('/jkn/taskid/post', 'post');
-        Route::post('/jkn/taskid/data', 'getdata');
-        Route::post('/jkn/taskid/send', 'send');
-    });
-
-    Route::controller(RegistrasiController::class)->group(function () {
-        Route::post('/registrasi/getdata', 'getdata');
-        Route::post('/registrasi/post', 'post');
-        Route::post('/registrasi/add-antrol', 'addantrian');
-        Route::post('/registrasi/batal-periksa', 'batalPeriksa');
-        Route::post('/registrasi/add-antrol-farmasi', 'addAntrianFarmasi');
     });
 
     Route::controller(ReferensiController::class)->group(function () {
@@ -90,7 +72,32 @@ Route::middleware(['api_token'])->group(function () {
         Route::get('/ref/provinsi', 'provinsi');
         Route::post('/ref/ambil-wilayah', 'getWilayah');
     });
+    // END MASTER
 
+    // START JKN
+    Route::controller(JknSuratkontrolController::class)->group(function () {
+        Route::post('/jkn/surkon/getdata', 'getdata');
+    });
+
+    Route::controller(JknTaskidController::class)->group(function () {
+        Route::post('/jkn/taskid/post', 'post');
+        Route::post('/jkn/taskid/data', 'getdata');
+        Route::post('/jkn/taskid/send', 'send');
+    });
+    // END JKN
+
+    // START REGISTRASI
+    Route::controller(RegistrasiController::class)->group(function () {
+        Route::post('/registrasi/getdata', 'getdata');
+        Route::post('/registrasi/post', 'post');
+        Route::post('/registrasi/add-antrol', 'addantrian');
+        Route::post('/registrasi/batal-periksa', 'batalPeriksa');
+        Route::post('/registrasi/add-antrol-farmasi', 'addAntrianFarmasi');
+        Route::post('/registrasi/checkin', 'checkin');
+    });
+    // END REGISTRASI
+
+    // START EMR
     Route::controller(RiwayatController::class)->group(function () {
         Route::post('/emr/data-klinis/riwayat/getdata', 'getdata');
         Route::post('/emr/data-klinis/riwayat/soap', 'soapie');
@@ -102,7 +109,9 @@ Route::middleware(['api_token'])->group(function () {
         Route::post('/emr/data-klinis/riwayat/tindakan/dokter/rajal', 'tindakanDokterRajal');
         Route::post('/emr/data-klinis/riwayat/detail-pemberian-obat', 'detailPemberianObat');
     });
+    // END EMR
 
+    // START PELAYANAN RAJAL
     Route::controller(AntrianRJController::class)->group(function () {
         Route::get('rajal/antrian/jadwal', 'jadwalPoli');
         Route::post('rajal/antrian/periksa', 'antrianPeriksa');
@@ -116,6 +125,14 @@ Route::middleware(['api_token'])->group(function () {
         Route::get('/rajal/dashboard/view/{id}', 'view');
         Route::get('/rajal/dashboard/panggil/{id}', 'panggil');
     });
+    // END PELAYANAN RAJAL
+
+    // START FARMASI
+    Route::controller(ResepController::class)->group(function () {
+        Route::post('/resep/getdata', 'resepGetdata');
+        Route::post('/resep/selesai', 'resepSelesai');
+    });
+    // END FARMASI
 
     Route::get('/master/poliklinik', action: [PoliklinikController::class, 'index']);
     Route::post('/master/poliklinik', action: [PoliklinikController::class, 'store']);
@@ -123,6 +140,7 @@ Route::middleware(['api_token'])->group(function () {
     Route::post('/master/dokter', action: [DokterController::class, 'store']);
 });
 
+// START API ANTROL
 Route::controller(JknApiAntrolController::class)->group(function () {
     Route::get('/api-antrol/ref/poli', 'refPoli');
     Route::get('/api-antrol/ref/dokter', 'refDokter');
@@ -139,7 +157,15 @@ Route::controller(JknApiAntrolController::class)->group(function () {
     Route::post('/api-antrol/daftar/antrian/farmasi', 'daftarAntrianFarmasi');
     Route::post('/api-antrol/batal/antrian', 'batalAntrean');
 });
+// END API ANTROL
 
+// START SERVICE
+Route::controller(ServiceFarmasiController::class)->group(function () {
+    Route::get('/service/farmasi/antrian-tambah', 'antrianTambah');
+});
+// END SERVICE
+
+// BYPASS
 Route::controller(MonevController::class)->group(function () {
     Route::get('monev', 'index')->name('monev');
 

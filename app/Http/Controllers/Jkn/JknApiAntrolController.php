@@ -486,6 +486,14 @@ class JknApiAntrolController extends Controller
             ]);
         }
 
+        $nobooking = $request->kodebooking;
+        
+        if (str_contains($nobooking, '/')) {
+            $nobooking_url = urlencode($nobooking);
+        }  else {
+            $nobooking_url = $nobooking;
+        }
+
         $sId = IoSetting::where('group', 'bpjs_kesehatan')->get();
 
         foreach ($sId as $row) {
@@ -500,7 +508,7 @@ class JknApiAntrolController extends Controller
         $curl = curl_init();
 
         curl_setopt_array($curl, array(
-            CURLOPT_URL => config('confsistem.url_antrol') . '/antrean/pendaftaran/kodebooking/' . $request->kodebooking,
+            CURLOPT_URL => config('confsistem.url_antrol') . '/antrean/pendaftaran/kodebooking/' . $nobooking_url,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_ENCODING => "",
             CURLOPT_MAXREDIRS => 10,
@@ -805,7 +813,7 @@ class JknApiAntrolController extends Controller
         }
 
         $messages = [
-            'required' => ':attribute tidak boleh kosong',
+            'required' => ':attribute tidak boleh kosongs',
         ];
 
         $validator = Validator::make($request->all(), $rules, $messages);
@@ -1018,55 +1026,46 @@ class JknApiAntrolController extends Controller
             'keterangan'    => $request->keterangan,
         ];
 
-        return $data;
+        $sId = IoSetting::where('group', 'bpjs_kesehatan')->get();
 
-        // $sId = IoSetting::where('group', 'bpjs_kesehatan')->get();
+        foreach ($sId as $row) {
+            ${$row['setting_option']} = $row['value'];
+        }
 
-        // foreach ($sId as $row) {
-        //     ${$row['setting_option']} = $row['value'];
-        // }
+        date_default_timezone_set('UTC');
+        $tStamp = strval(time() - strtotime('1970-01-01 00:00:00'));
+        $signature = hash_hmac('sha256', $bpjs_cons_id . "&" . $tStamp, $bpjs_secret_key, true);
+        $encodedSignature = base64_encode($signature);
 
-        // date_default_timezone_set('UTC');
-        // $tStamp = strval(time() - strtotime('1970-01-01 00:00:00'));
-        // $signature = hash_hmac('sha256', $bpjs_cons_id . "&" . $tStamp, $bpjs_secret_key, true);
-        // $encodedSignature = base64_encode($signature);
+        $curl = curl_init();
 
-        // $curl = curl_init();
+        curl_setopt_array($curl, array(
+            CURLOPT_URL => config('confsistem.url_antrol') . '/antrean/farmasi/add',
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => "",
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 30000,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => "POST",
+            CURLOPT_POSTFIELDS => json_encode($data),
+            CURLOPT_HTTPHEADER => array(
+                // Set here requred headers
+                "accept: */*",
+                "accept-language: en-US,en;q=0.8",
+                "content-type: application/json",
+                'X-cons-id: ' . $bpjs_cons_id . '',
+                'X-timestamp: ' . $tStamp . '',
+                'X-signature: ' . $encodedSignature . '',
+                // 'user_key: ' . $antrol_userkey . '',
+            ),
+        ));
 
-        // curl_setopt_array($curl, array(
-        //     CURLOPT_URL => config('confsistem.url_antrol') . '/antrean/farmasi/add',
-        //     CURLOPT_RETURNTRANSFER => true,
-        //     CURLOPT_ENCODING => "",
-        //     CURLOPT_MAXREDIRS => 10,
-        //     CURLOPT_TIMEOUT => 30000,
-        //     CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-        //     CURLOPT_CUSTOMREQUEST => "POST",
-        //     CURLOPT_POSTFIELDS => json_encode($data),
-        //     CURLOPT_HTTPHEADER => array(
-        //         // Set here requred headers
-        //         "accept: */*",
-        //         "accept-language: en-US,en;q=0.8",
-        //         "content-type: application/json",
-        //         'X-cons-id: ' . $bpjs_cons_id . '',
-        //         'X-timestamp: ' . $tStamp . '',
-        //         'X-signature: ' . $encodedSignature . '',
-        //         // 'user_key: ' . $antrol_userkey . '',
-        //     ),
-        // ));
+        $response = curl_exec($curl);
+        $err = curl_error($curl);
 
-        // $response = curl_exec($curl);
-        // $err = curl_error($curl);
+        $decode = json_decode($response, true);
 
-        // $decode = json_decode($response, true);
-
-        // if ($decode['metadata']['code'] == 200) {
-        //     return response()->json([
-        //         'code' => 201,
-        //         'message' => 'Proses gagal, Parameter tidak sesuai'
-        //     ]);
-        // }
-
-        // return response()->json($decode);
+        return response()->json($decode);
     }
 
     public function batalAntrean(Request $request)
