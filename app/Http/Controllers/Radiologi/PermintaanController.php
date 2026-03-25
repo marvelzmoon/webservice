@@ -25,7 +25,9 @@ class PermintaanController extends Controller
             ], 201);
         }
         $data = PermintaanRadiologi::with(['register'=>function($child){
-            $child->with(['pasien_compact','doctor','satusehatlokasi','policlinic']);
+            $child->with(['pasien'=>function($rchild) {
+                $rchild->select(['no_rkm_medis','nm_pasien','jk','tgl_lahir','alamat','no_ktp'])->with(['patient_id']);
+            },'doctor','satusehatlokasi','policlinic']);
         },'encounter','request','pemeriksaan','perujuk','imaging'])
         ->whereBetween('tgl_permintaan',[date('Y-m-d',strtotime($tanggalAwal)),date('Y-m-d',strtotime($tanggalAkhir))])
         ->get();

@@ -78,7 +78,7 @@ class RadiologiRequestController extends Controller
                 'reference' => 'Encounter/'.$request->encounter_id,
                 'display'=> "Permintaan $request->exam_name pasien $request->mrid - $request->patient_name No.Rawat $request->register_id $request->time"
             ],
-            'authoredOn'=>$request->time,
+            'authoredOn'=>\Carbon\Carbon::parse($request->time)->setTimezone('Asia/Jakarta')->format('Y-m-d\TH:i:sP'),
             'requester' => [
                 'reference' => 'Practitioner/'.$request->practitioner_id,
                 'display' => $request->practitioner_name
@@ -204,7 +204,7 @@ class RadiologiRequestController extends Controller
                 'reference' => 'Encounter/'.$request->encounter_id,
                 'display'=> "Permintaan $request->exam_name pasien $request->mrid - $request->patient_name No.Rawat $request->register_id $request->time"
             ],
-            'authoredOn'=>$request->time,
+            'authoredOn'=>\Carbon\Carbon::parse($request->time)->setTimezone('Asia/Jakarta')->format('Y-m-d\TH:i:sP'),
             'requester' => [
                 'reference' => 'Practitioner/'.$request->practitioner_id,
                 'display' => $request->practitioner_name
@@ -251,7 +251,7 @@ class RadiologiRequestController extends Controller
         $serviceRequest?:$serviceRequest=new SatuSehatServiceRequestRadiologi();
         $serviceRequest->noorder = $request->noorder;
         $serviceRequest->kd_jenis_prw = $request->kd_jenis_prw;
-        isset($data->id)?$serviceRequest->id_servicerequest = $data->kd_jenis_prw:false;
+        $serviceRequest->id_servicerequest = $data->id;
         $serviceRequest->save();
         return response()->json([
             'code' => $code,
